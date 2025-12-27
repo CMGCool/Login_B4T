@@ -22,6 +22,14 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::post('/super-admin/create-admin', [SuperAdminController::class, 'createAdmin']);
 });
 
+//Endpoint super admin untuk membuat user baru
+Route::middleware(['auth:sanctum', 'role:super_admin'])
+    ->post('/super-admin/create-user', [UserManagementController::class, 'createUser']);
+
+//Endpoint untuk admin untuk membuat user baru
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
+    ->post('/admin/create-user', [UserManagementController::class, 'createUser']);
+
 // Logout route
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 

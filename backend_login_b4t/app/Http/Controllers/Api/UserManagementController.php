@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserManagementController extends Controller
 {
@@ -37,10 +38,9 @@ class UserManagementController extends Controller
             'data' => $users
         ]);
     }
-
     /**
      * USER
-     * Welcome page
+     * Lihat welcome page
      */
     public function welcome(Request $request)
     {
@@ -73,5 +73,33 @@ class UserManagementController extends Controller
                 'is_approved' => $user->is_approved
             ]
         ]);
+    }
+
+    /**
+     * Admin dan Super Admin 
+     * Create user
+     */
+
+    public function createUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'username' => 'required|string|unique:users',
+            'email' => 'nullable|email|unique:users',
+            'password' => 'required|min:6',
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'username' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'user',
+            'is_approved' => true, // langsung aktif
+        ]);
+
+        return response()->json([
+            'message' => 'User berhasil dibuat'
+        ], 201);
     }
 }
