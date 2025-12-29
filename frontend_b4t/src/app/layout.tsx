@@ -1,10 +1,10 @@
 import "./globals.css";
-import { Epilogue } from "next/font/google";
+import { Inter } from "next/font/google";
 
-const epilogueFont = Epilogue({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-epilogue",
-  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 export default function RootLayout({
@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${epilogueFont.variable} antialiased`}>
+    <html lang="en" className={inter.variable}>
+      <body className="font-inter antialiased bg-white text-slate-900">
         {children}
       </body>
     </html>

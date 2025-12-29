@@ -1,88 +1,3 @@
-// "use client";
-
-// import { z } from "zod";
-// import { useForm } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { signInFormSchema } from "@/lib/form-schema";
-// import {Form,FormField,FormItem,FormControl,FormMessage,} from "@/components/ui/form";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { login } from "@/lib/auth";
-// import Link from "next/link";
-
-// export default function SigninPage() {
-//   const form = useForm<z.infer<typeof signInFormSchema>>({
-//     resolver: zodResolver(signInFormSchema),
-//   });
-
-//   const onSubmit = (values: z.infer<typeof signInFormSchema>) => {
-//     console.log(values);
-//   };
-
-//   return (
-//     <div className="flex min-h-screen items-center justify-center">
-//       <div className="w-full max-w-sm border border-border p-6 rounded-md">
-//         <h1 className="text-2xl font-semibold text-center mb-2">
-//           Login your account
-//         </h1>
-//         <p className="text-sm text-muted-foreground text-center mb-6">
-//           Enter your email and password
-//         </p>
-
-//         <Form {...form}>
-//           <form
-//             onSubmit={form.handleSubmit(onSubmit)}
-//             className="space-y-4"
-//           >
-    
-//             <FormField
-//               control={form.control}
-//               name="email"
-//               render={({ field }) => (
-//                 <FormItem>
-//                   <FormControl>
-//                     <Input
-//                       placeholder="Email"
-//                       type="email"
-//                       {...field}
-//                     />
-//                   </FormControl>
-//                   <FormMessage />
-//                 </FormItem>
-//               )}
-//             />
-
-//             <FormField
-//               control={form.control}
-//               name="password"
-//               render={({ field }) => (
-//                 <FormItem>
-//                   <FormControl>
-//                     <Input
-//                       placeholder="Password"
-//                       type="password"
-//                       {...field}
-//                     />
-//                   </FormControl>
-//                   <FormMessage />
-//                 </FormItem>
-//               )}
-//             />
-
-//             <Button type="submit" className="w-full">
-//               Sign In
-//             </Button>
-//             <div className="text-sm text-muted-foreground">
-//                 Don&apos;t have an account?{" "}
-//             <Link href="/auth/Signup" className="text-primary underline-offset-4 hover:underline">Sign up</Link>
-//             </div>
-//           </form>
-//         </Form>
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { z } from "zod";
@@ -102,16 +17,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+type SignInValues = z.infer<typeof signInFormSchema>;
 
 export default function SigninPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof signInFormSchema>>({
+  const form = useForm<SignInValues>({
     resolver: zodResolver(signInFormSchema),
     defaultValues: {
       email: "",
@@ -119,73 +37,74 @@ export default function SigninPage() {
     },
   });
 
-  const onSubmit = async (
-  values: z.infer<typeof signInFormSchema>
-) => {
-  try {
-    setLoading(true);
-    setError(null);
+  const onSubmit = async (values: SignInValues) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const res = await login(values);
-    localStorage.setItem("token", res.token);
-    router.push("/dashboard");
+      const res = await login({
+        login: values.email, // email / username
+        password: values.password,
+      });
 
-  } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      setError(err.response?.data?.message ?? "Login failed");
-    } else {
-      setError("Login failed");
+      const role = res?.role;
+
+      if (role === "super_admin") {
+        router.replace("/super-admin/dashboard");
+      } else if (role === "admin") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/user/dashboard");
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message ?? "Login failed");
+      } else {
+        setError("Login failed");
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-sm border border-border p-6 rounded-md">
-        <h1 className="text-2xl font-semibold text-center mb-2">
-          Login your account
-        </h1>
-        <p className="text-sm text-muted-foreground text-center mb-6">
-          Enter your email and password
-        </p>
-
-        {error && (
-          <p className="text-sm text-red-600 text-center mb-3">
-            {error}
+    <div className="min-h-screen w-full flex items-center justify-center bg-white px-4">
+      <div className="w-full max-w-[360px]">
+        {/* Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900">Log in</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Welcome back! Please enter your details.
           </p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-4 text-sm text-red-600 text-center">
+            {error}
+          </div>
         )}
 
+        {/* Form */}
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {/* Username */}
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormControl>
-                    <Input placeholder="Enter your Email" 
-                    type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
+                  <label className="block mb-1 text-sm font-medium text-gray-800">
+                    Username
+                  </label>
                   <FormControl>
                     <Input
-                      placeholder="Enter your Password"
-                      type="password"
                       {...field}
+                      value={field.value ?? ""}
+                      placeholder="Enter your email"
+                      type="text"
+                      autoComplete="username"
+                      className="h-11"
                     />
                   </FormControl>
                   <FormMessage />
@@ -193,17 +112,46 @@ export default function SigninPage() {
               )}
             />
 
+            {/* Password */}
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <label className="block mb-1 text-sm font-medium text-gray-800">
+                    Password
+                  </label>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="••••••••"
+                      type="password"
+                      autoComplete="current-password"
+                      className="h-11"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Button */}
             <Button
               type="submit"
-              className="w-full"
-              disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+              disabled={loading}
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
-            <div className="text-sm text-muted-foreground text-center">
+
+            {/* Footer */}
+            <div className="text-center text-sm text-gray-500 pt-1">
               Don&apos;t have an account?{" "}
               <Link
                 href="/auth/Signup"
-                className="text-primary hover:underline underline-offset-4">
+                className="text-blue-600 font-medium hover:underline"
+              >
                 Sign up
               </Link>
             </div>
@@ -213,5 +161,3 @@ export default function SigninPage() {
     </div>
   );
 }
-
-

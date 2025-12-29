@@ -1,9 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return (
-  <div>
-    <h1>Good Morning Olivia</h1>
-  </div>
-  );
+export default function HomePage() {
+  redirect("/auth/Signin"); // atau "/auth/signin"
 }

@@ -5,55 +5,87 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SuperAdminController;
 use App\Http\Controllers\Api\UserManagementController;
+use App\Http\Controllers\Api\DashboardStatsController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
+| Semua route di file ini otomatis punya prefix /api
+| Contoh: /api/login, /api/logout, dst.
+|--------------------------------------------------------------------------
 */
 
-// Endpoint untuk super admin membuat admin baru
-Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
-    Route::post('/super-admin/create-admin', [SuperAdminController::class, 'createAdmin']);
+/**
+ * Public routes (tanpa login)
+ */
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'app' => config('app.name'),
+        'time' => now()->toDateTimeString(),
+    ]);
 });
 
-//Endpoint super admin untuk membuat user baru
-Route::middleware(['auth:sanctum', 'role:super_admin'])
-    ->post('/super-admin/create-user', [UserManagementController::class, 'createUser']);
-
-//Endpoint untuk admin untuk membuat user baru
-Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
-    ->post('/admin/create-user', [UserManagementController::class, 'createUser']);
-
-// Logout route
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
-
-// Register route
 Route::post('/register', [AuthController::class, 'register']);
-
-// Login route
 Route::post('/login', [AuthController::class, 'login']);
 
-//Endpoint untuk super admin melihat semua user dan admin
-Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
-    Route::get('/super-admin/users', [UserManagementController::class, 'allUsers']);
-});
+/**
+ * Protected routes (butuh auth sanctum)
+ */
+Route::middleware('auth:sanctum')->group(function () {
 
-//Endpoint untuk admin melihat user saja
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::get('/admin/users', [UserManagementController::class, 'usersOnly']);
-});
+    /**
+     * Endpoint untuk cek user yang sedang login (dibutuhkan frontend)
+     * GET /api/me
+     */
+    Route::get('/me', function (Request $request) {
+        return response()->json($request->user());
+    });
 
-// Endpoint untuk user melihat welcome page
-Route::middleware(['auth:sanctum', 'role:user'])->group(function () {
-    Route::get('/user/welcome', [UserManagementController::class, 'welcome']);
-});
+    // Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-// Endpoint untuk admin dan super admin menyetujui user
-Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
-    ->post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
+    /**
+     * Super Admin routes
+     */
+    Route::middleware('role:super_admin')->prefix('super-admin')->group(function () {
+        Route::post('/create-admin', [SuperAdminController::class, 'createAdmin']);
+        Route::post('/create-user', [UserManagementController::class, 'createUser']);
+        Route::get('/users', [UserManagementController::class, 'allUsers']);
+
+        // ✅ Dashboard stats untuk super admin
+        // GET /api/super-admin/dashboard/stats
+        Route::get('/dashboard/stats', [DashboardStatsController::class, 'superAdminStats']);
+
+        // (opsional) approve user juga bisa dibuat versi super-admin:
+        // Route::post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
+    });
+
+    /**
+     * Admin routes (khusus admin)
+     */
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/users', [UserManagementController::class, 'usersOnly']);
+        Route::post('/create-user', [UserManagementController::class, 'createUser']);
+
+        // (opsional) approve user versi admin:
+        // Route::post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
+    });
+
+    /**
+     * Admin + Super Admin routes (shared)
+     * Dipakai kalau endpoint-nya sama untuk admin & super_admin.
+     */
+    Route::middleware('role:admin,super_admin')->group(function () {
+        // Approve user (admin dan super admin bisa)
+        Route::post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
+    });
+
+    /**
+     * User routes
+     */
+    Route::middleware('role:user')->prefix('user')->group(function () {
+        Route::get('/welcome', [UserManagementController::class, 'welcome']);
+    });
+});
