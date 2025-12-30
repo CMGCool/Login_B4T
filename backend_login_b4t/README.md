@@ -1,64 +1,474 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+## API Documentation
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### Base URL
+```
+http://localhost:8000/api
+```
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Authentication
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+API ini menggunakan Laravel Sanctum untuk autentikasi. Token bearer harus disertakan di header untuk endpoint yang memerlukan autentikasi:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+Authorization: Bearer {token}
+```
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Public Endpoints (Tanpa Autentikasi)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Register
+**POST** `/register`
 
-## Laravel Sponsors
+Mendaftarkan user baru. User akan menunggu approval dari admin/super admin.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+**Request Body:**
+```json
+{
+    "name": "John Doe",
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "password123"
+}
+```
 
-### Premium Partners
+**Validation:**
+- `name`: required, string
+- `username`: required, string, unique
+- `email`: nullable, email, unique
+- `password`: required, minimum 6 karakter
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+**Response (201):**
+```json
+{
+    "message": "Register berhasil, menunggu approval admin"
+}
+```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2. Login
+**POST** `/login`
 
-## Code of Conduct
+Login dengan username dan password.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**Request Body:**
+```json
+{
+    "username": "johndoe",
+    "password": "password123"
+}
+```
 
-## Security Vulnerabilities
+**Validation:**
+- `username`: required
+- `password`: required
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Response Success (200):**
+```json
+{
+    "token": "1|abc123...",
+    "role": "user",
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "username": "johndoe",
+        "email": "john@example.com",
+        "role": "user",
+        "is_approved": true
+    }
+}
+```
 
-## License
+**Response Error:**
+- **401** - Username atau password salah
+- **403** - Akun belum di-approve
+- **403** - Akun ini menggunakan login Google
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## Protected Endpoints
+
+### User Endpoints (Role: user)
+
+#### 1. User Welcome Page
+**GET** `/user/welcome`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Welcome John Doe",
+    "role": "user"
+}
+```
+
+---
+
+### Admin Endpoints (Role: admin)
+
+#### 1. Get All Users
+**GET** `/admin/users`
+
+Melihat semua user (tidak termasuk admin dan super_admin).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "username": "johndoe",
+            "email": "john@example.com",
+            "is_approved": true,
+            "created_at": "2025-12-30T10:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+#### 2. Create User
+**POST** `/admin/create-user`
+
+Admin dapat membuat user baru yang langsung aktif (tidak perlu approval).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+    "name": "Jane Doe",
+    "username": "janedoe",
+    "email": "jane@example.com",
+    "password": "password123"
+}
+```
+
+**Validation:**
+- `name`: required, string
+- `username`: required, string, unique
+- `email`: nullable, email, unique
+- `password`: required, minimum 6 karakter
+
+**Response (201):**
+```json
+{
+    "message": "User berhasil dibuat"
+}
+```
+
+---
+
+#### 3. Approve User
+**POST** `/approve-user/{id}`
+
+Admin/Super Admin dapat approve user yang baru register.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**URL Parameter:**
+- `id`: User ID
+
+**Response Success (200):**
+```json
+{
+    "message": "User approved successfully",
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "username": "johndoe",
+        "email": "john@example.com",
+        "is_approved": true
+    }
+}
+```
+
+**Response Error (400):**
+```json
+{
+    "message": "User already approved"
+}
+```
+
+---
+
+### Super Admin Endpoints (Role: super_admin)
+
+#### 1. Create Admin
+**POST** `/super-admin/create-admin`
+
+Super admin dapat membuat admin baru.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+    "name": "Admin User",
+    "username": "adminuser",
+    "email": "admin@example.com",
+    "password": "password123"
+}
+```
+
+**Validation:**
+- `name`: required, string, max 255 karakter
+- `username`: required, string, unique
+- `email`: required, email, unique
+- `password`: required, minimum 6 karakter
+
+**Response (201):**
+```json
+{
+    "message": "Admin berhasil dibuat",
+    "data": {
+        "id": 2,
+        "name": "Admin User",
+        "username": "adminuser",
+        "email": "admin@example.com",
+        "role": "admin",
+        "is_approved": 1
+    }
+}
+```
+
+---
+
+#### 2. Create User
+**POST** `/super-admin/create-user`
+
+Super admin dapat membuat user baru yang langsung aktif.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Request Body:**
+```json
+{
+    "name": "New User",
+    "username": "newuser",
+    "email": "newuser@example.com",
+    "password": "password123"
+}
+```
+
+**Response (201):**
+```json
+{
+    "message": "User berhasil dibuat"
+}
+```
+
+---
+
+#### 3. Get All Users and Admins
+**GET** `/super-admin/users`
+
+Melihat semua admin dan user (tidak termasuk super_admin).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Admin User",
+            "username": "adminuser",
+            "email": "admin@example.com",
+            "role": "admin",
+            "is_approved": 1,
+            "created_at": "2025-12-30T09:00:00.000000Z"
+        },
+        {
+            "id": 2,
+            "name": "John Doe",
+            "username": "johndoe",
+            "email": "john@example.com",
+            "role": "user",
+            "is_approved": 1,
+            "created_at": "2025-12-30T10:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+### Common Endpoint (Semua Role yang Authenticated)
+
+#### Logout
+**POST** `/logout`
+
+Logout dan hapus token saat ini.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Logout berhasil"
+}
+```
+
+---
+
+## Roles & Permissions
+
+| Role | Permissions |
+|------|------------|
+| **super_admin** | - Membuat admin<br>- Membuat user<br>- Melihat semua admin & user<br>- Approve user |
+| **admin** | - Membuat user<br>- Melihat semua user<br>- Approve user |
+| **user** | - Akses welcome page<br>- Logout |
+
+---
+
+## Error Responses
+
+### 401 Unauthorized
+```json
+{
+    "message": "Unauthenticated."
+}
+```
+
+### 403 Forbidden
+```json
+{
+    "message": "Unauthorized action."
+}
+```
+
+### 404 Not Found
+```json
+{
+    "message": "Resource not found"
+}
+```
+
+### 422 Validation Error
+```json
+{
+    "message": "The given data was invalid.",
+    "errors": {
+        "username": [
+            "The username has already been taken."
+        ]
+    }
+}
+```
+
+---
+
+## Setup & Configuration
+
+### 1. Install Dependencies
+```bash
+composer install
+```
+
+### 2. Setup Environment
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### 3. Configure Database
+Edit `.env` file:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+### 4. Configure Google OAuth
+Edit `.env` file:
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+```
+
+### 5. Run Migrations
+```bash
+php artisan migrate
+```
+
+### 6. Seed Super Admin
+```bash
+php artisan db:seed --class=SuperAdminSeeder
+```
+
+### 7. Start Server
+```bash
+php artisan serve
+```
+
+Server akan berjalan di `http://localhost:8000`
+
+---
+
+## Testing
+
+### Using Postman or Thunder Client
+
+1. **Register User**
+   - POST `http://localhost:8000/api/register`
+   - Body: JSON dengan name, username, email, password
+
+2. **Login Super Admin** (setelah seeding)
+   - POST `http://localhost:8000/api/login`
+   - Body: username & password dari SuperAdminSeeder
+
+3. **Use Bearer Token**
+   - Salin token dari response login
+   - Tambahkan di header: `Authorization: Bearer {token}`
+
+4. **Test Protected Endpoints**
+   - Sesuaikan endpoint dengan role user yang login
+
+---
+
+## Notes
+
+- User yang register manual perlu approval dari admin/super_admin
+- User yang login via Google langsung approved
+- Admin hanya bisa dibuat oleh super_admin
+- Token dikelola menggunakan Laravel Sanctum
+- CORS sudah dikonfigurasi untuk frontend di `http://localhost:3000`
+
