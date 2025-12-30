@@ -89,6 +89,26 @@ Login dengan username dan password.
 
 ---
 
+### 3. Google SSO - Redirect
+**GET** `/auth/google/redirect`
+
+Redirect user ke halaman login Google.
+
+**Response:**
+Redirect ke Google OAuth consent screen.
+
+---
+
+### 4. Google SSO - Callback
+**GET** `/auth/google/callback`
+
+Callback dari Google setelah user login. Otomatis membuat user baru jika belum ada dan langsung approved.
+
+**Response:**
+Redirect ke: `http://localhost:3000/sso?token={token}&role={role}`
+
+---
+
 ## Protected Endpoints
 
 ### User Endpoints (Role: user)
