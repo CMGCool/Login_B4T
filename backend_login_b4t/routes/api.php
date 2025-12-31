@@ -48,6 +48,14 @@ Route::middleware(['auth:sanctum', 'role:user'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
     ->post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
 
+// Endpoint untuk admin dan super admin mengupdate user
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
+    ->put('/users/{id}', [UserManagementController::class, 'updateUser']);
+
+// Endpoint untuk admin dan super admin menghapus user
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
+    ->delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
+
 // Google SSO Routes
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);

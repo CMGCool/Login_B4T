@@ -102,4 +102,76 @@ class UserManagementController extends Controller
             'message' => 'User berhasil dibuat'
         ], 201);
     }
+
+    /**
+     * Admin dan Super Admin 
+     * Update user
+     */
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        // Admin hanya bisa update user, bukan admin atau super admin
+        if ($request->user()->role === 'admin' && $user->role !== 'user') {
+            return response()->json([
+                'message' => 'Admin hanya bisa update user'
+            ], 403);
+        }
+
+        $request->validate([
+            'name' => 'sometimes|string',
+            'username' => 'sometimes|string|unique:users,username,' . $id,
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'password' => 'sometimes|min:6',
+        ]);
+
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('username')) {
+            $user->username = $request->username;
+        }
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'User berhasil diupdate',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'role' => $user->role,
+                'is_approved' => $user->is_approved
+            ]
+        ]);
+    }
+
+    /**
+     * Admin dan Super Admin 
+     * Delete user
+     */
+    public function deleteUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        // Tidak boleh delete admin atau super admin
+        if ($request->user()->role === 'admin' && $user->role !== 'user') {
+            return response()->json([
+                'message' => 'Admin hanya bisa menghapus user'
+            ], 403);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User berhasil dihapus'
+        ]);
+    }
 }
