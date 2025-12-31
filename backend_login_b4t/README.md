@@ -6,14 +6,14 @@ Backend RESTful API untuk sistem autentikasi dengan role-based access control, d
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Roles & Permissions](#roles--permissions)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+- [Quick Start](#-quick-start)
+- [Prerequisites](#-prerequisites)
+- [Setup Instructions](#-setup-instructions)
+- [Configuration](#-configuration)
+- [API Documentation](#-api-documentation)
+- [Roles & Permissions](#-roles--permissions)
+- [Testing](#-testing)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -1040,42 +1040,6 @@ composer install
 - CORS dikonfigurasi untuk `http://localhost:3000`
 - Semua passwords hashed menggunakan bcrypt
 - Database timestamps dalam UTC
-
----
-
-## 📄 File Structure
-
-```
-backend_login_b4t/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── UserManagementController.php
-│   │   ├── Middleware/
-│   │   │   └── CheckRole.php
-│   │   └── Kernel.php
-│   ├── Models/
-│   │   └── User.php
-│   └── Providers/
-├── config/
-│   ├── auth.php
-│   ├── cors.php
-│   ├── database.php
-│   └── sanctum.php
-├── database/
-│   ├── migrations/
-│   │   ├── create_users_table.php
-│   │   └── create_personal_access_tokens_table.php
-│   └── seeders/
-│       └── SuperAdminSeeder.php
-├── routes/
-│   ├── api.php               # API Routes
-│   └── web.php
-├── storage/logs/             # Logs
-├── .env.example
-├── composer.json
-└── README.md
-```
 
 ---
 
