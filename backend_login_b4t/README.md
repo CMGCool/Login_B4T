@@ -6,14 +6,14 @@ Backend RESTful API untuk sistem autentikasi dengan role-based access control, d
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Roles & Permissions](#roles--permissions)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+- [Quick Start](#-quick-start)
+- [Prerequisites](#-prerequisites)
+- [Setup Instructions](#-setup-instructions)
+- [Configuration](#-configuration)
+- [API Documentation](#-api-documentation)
+- [Roles & Permissions](#-roles--permissions)
+- [Testing](#-testing)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
