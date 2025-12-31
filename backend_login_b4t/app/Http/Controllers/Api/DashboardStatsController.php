@@ -17,4 +17,13 @@ class DashboardStatsController extends Controller
             'total_user'  => $totalUser,
         ]);
     }
+
+    public function adminStats()
+    {
+        $totalUser = User::where('role', 'user')->count();
+
+        return response()->json([
+            'total_user' => $totalUser,
+        ]);
+    }
 }

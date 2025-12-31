@@ -4,23 +4,23 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username', // ⬅️ tambahkan
-            'email' => 'required|email|unique:users,email',
+            'name' => 'required|string',
+            'username' => 'required|string|unique:users',
+            'email' => 'nullable|email|unique:users',
             'password' => 'required|min:6',
         ]);
 
-        $user = User::create([
+        User::create([
             'name' => $request->name,
-            'username' => $request->username, // ⬅️ tambahkan
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'user',
@@ -28,28 +28,22 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Register berhasil, menunggu approval',
-            'user' => $user
+            'message' => 'Register berhasil, menunggu approval admin'
         ], 201);
     }
 
     public function login(Request $request)
     {
         $request->validate([
-            'login' => 'required',
+            'username' => 'required',
             'password' => 'required',
         ]);
 
-        $login = trim($request->login); // ⬅️ hilangkan spasi biar aman
-
-        // ⬇️ cari email ATAU username (lebih aman daripada filter_var)
-        $user = User::where('email', $login)
-            ->orWhere('username', $login)
-            ->first();
+        $user = User::where('username', $request->username)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email/Username atau password salah'
+                'message' => 'Username atau password salah'
             ], 401);
         }
 
@@ -76,6 +70,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Hapus token yang sedang digunakan
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
