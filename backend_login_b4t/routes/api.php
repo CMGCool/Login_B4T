@@ -11,33 +11,23 @@ use App\Http\Controllers\Api\GoogleAuthController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
+| Semua route di file ini otomatis punya prefix /api
+| Contoh: /api/login, /api/logout, dst.
+|--------------------------------------------------------------------------
 */
 
-// Endpoint untuk super admin membuat admin baru
-Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
-    Route::post('/super-admin/create-admin', [SuperAdminController::class, 'createAdmin']);
+/**
+ * Public routes (tanpa login)
+ */
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'app' => config('app.name'),
+        'time' => now()->toDateTimeString(),
+    ]);
 });
 
-//Endpoint super admin untuk membuat user baru
-Route::middleware(['auth:sanctum', 'role:super_admin'])
-    ->post('/super-admin/create-user', [UserManagementController::class, 'createUser']);
-
-//Endpoint untuk admin untuk membuat user baru
-Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
-    ->post('/admin/create-user', [UserManagementController::class, 'createUser']);
-
-// Logout route
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
-
-// Register route
 Route::post('/register', [AuthController::class, 'register']);
-
-// Login route
 Route::post('/login', [AuthController::class, 'login']);
 
 //Endpoint untuk super admin melihat semua user dan admin
