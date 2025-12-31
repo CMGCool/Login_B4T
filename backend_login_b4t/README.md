@@ -1043,42 +1043,6 @@ composer install
 
 ---
 
-## 📄 File Structure
-
-```
-backend_login_b4t/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── UserManagementController.php
-│   │   ├── Middleware/
-│   │   │   └── CheckRole.php
-│   │   └── Kernel.php
-│   ├── Models/
-│   │   └── User.php
-│   └── Providers/
-├── config/
-│   ├── auth.php
-│   ├── cors.php
-│   ├── database.php
-│   └── sanctum.php
-├── database/
-│   ├── migrations/
-│   │   ├── create_users_table.php
-│   │   └── create_personal_access_tokens_table.php
-│   └── seeders/
-│       └── SuperAdminSeeder.php
-├── routes/
-│   ├── api.php               # API Routes
-│   └── web.php
-├── storage/logs/             # Logs
-├── .env.example
-├── composer.json
-└── README.md
-```
-
----
-
 ## 🔗 Useful Resources
 
 - [Laravel 8 Docs](https://laravel.com/docs/8.x)
