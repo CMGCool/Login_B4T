@@ -53,6 +53,12 @@ class AuthController extends Controller
             ], 403);
         }
 
+        if ($user->provider === 'google') {
+            return response()->json([
+                'message' => 'Akun ini menggunakan login Google'
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

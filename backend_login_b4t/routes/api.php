@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SuperAdminController;
 use App\Http\Controllers\Api\UserManagementController;
+use App\Http\Controllers\Api\GoogleAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,3 +58,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->group(function () {
 // Endpoint untuk admin dan super admin menyetujui user
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])
     ->post('/approve-user/{id}', [UserManagementController::class, 'approveUser']);
+
+// Google SSO Routes
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
