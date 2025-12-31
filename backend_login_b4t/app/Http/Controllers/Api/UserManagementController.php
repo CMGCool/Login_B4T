@@ -118,6 +118,20 @@ class UserManagementController extends Controller
             ], 403);
         }
 
+        // Prevent Google SSO users dari edit email dan password
+        if ($user->provider === 'google') {
+            if ($request->has('email') && $request->email !== $user->email) {
+                return response()->json([
+                    'message' => 'Email linked ke Google account, tidak bisa diubah'
+                ], 403);
+            }
+            if ($request->has('password')) {
+                return response()->json([
+                    'message' => 'Password user Google SSO tidak dapat diubah'
+                ], 403);
+            }
+        }
+
         $request->validate([
             'name' => 'sometimes|string',
             'username' => 'sometimes|string|unique:users,username,' . $id,
