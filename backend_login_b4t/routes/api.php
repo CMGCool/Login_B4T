@@ -24,6 +24,9 @@ Route::post('/login', [AuthController::class, 'login']);
 // Logout route
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
+// Get current user profile (untuk semua role)
+Route::middleware('auth:sanctum')->get('/me', [UserManagementController::class, 'getMe']);
+
 //Endpoint untuk super admin melihat semua user dan admin
 Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::get('/super-admin/users', [UserManagementController::class, 'allUsers']);

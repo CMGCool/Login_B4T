@@ -38,15 +38,25 @@ class UserManagementController extends Controller
             'data' => $users
         ]);
     }
+
     /**
      * USER
      * Lihat welcome page
      */
     public function welcome(Request $request)
     {
+        $user = $request->user();
+
         return response()->json([
-            'message' => 'Welcome ' . $request->user()->name,
-            'role' => $request->user()->role
+            'message' => 'Welcome ' . $user->name,
+            'role' => $user->role,
+            // ✅ DATA YANG DIPAKAI FRONTEND
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+            ]
         ]);
     }
 
@@ -186,6 +196,26 @@ class UserManagementController extends Controller
 
         return response()->json([
             'message' => 'User berhasil dihapus'
+        ]);
+    }
+
+    /**
+     * Semua Role (Super Admin, Admin, User)
+     * Get current user profile untuk sidebar/profile
+     */
+    public function getMe(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'role' => $user->role,
+            'is_approved' => $user->is_approved,
+            'provider' => $user->provider,
+            'created_at' => $user->created_at
         ]);
     }
 }
