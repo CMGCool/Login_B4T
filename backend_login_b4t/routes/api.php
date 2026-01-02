@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->get('/me', [UserManagementController::class, 
 //Endpoint untuk super admin melihat semua user dan admin
 Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::get('/super-admin/users', [UserManagementController::class, 'allUsers']);
+    //endpoint untuk super admin membuat admin
     Route::post('/super-admin/create-admin', [SuperAdminController::class, 'createAdmin']);
     //endpoint untuk super admin membuat user
     Route::post('/super-admin/create-user', [UserManagementController::class, 'createUser']);
