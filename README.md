@@ -6,21 +6,21 @@ Sistem autentikasi fullstack dengan role-based access control, dibangun dengan L
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Tech Stack](#-tech-stack)
-- [Prerequisites](#-prerequisites)
-- [Backend Setup](#-backend-setup)
-- [Frontend Setup](#-frontend-setup)
-- [API Documentation](#-api-documentation)
-- [Architecture & Concepts](#-architecture--concepts)
-- [Roles & Permissions](#-roles--permissions)
-- [Testing](#-testing)
-- [Troubleshooting](#-troubleshooting)
-- [Resources](#-resources)
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [API Documentation](#api-documentation)
+- [Architecture & Concepts](#architecture--concepts)
+- [Roles & Permissions](#roles--permissions)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Resources](#resources)
 
 ---
 
-## 🎯 Overview
+## Overview
 
 Login B4T adalah sistem autentikasi lengkap yang menyediakan:
 
@@ -28,18 +28,21 @@ Login B4T adalah sistem autentikasi lengkap yang menyediakan:
 - ✅ Login dengan username/password dan Google OAuth
 - ✅ Role-based access control (Super Admin, Admin, User)
 - ✅ User management (CRUD operations)
-- ✅ Dashboard statistics
-- ✅ Token-based authentication (Laravel Sanctum)
-- ✅ Modern UI dengan shadcn/ui
-- ✅ Form validation dengan Zod
+
 
 **Demo Credentials:**
+
+**Super Admin:**
 - Username: `superadmin`
+- Password: `password123`
+
+**Admin:**
+- Username: `adminit`
 - Password: `password123`
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Backend
 - **Laravel** 8.75 - PHP Framework
@@ -63,7 +66,7 @@ Login B4T adalah sistem autentikasi lengkap yang menyediakan:
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### Backend Requirements
 
@@ -102,7 +105,7 @@ npm --version
 
 ---
 
-## 🔧 Backend Setup
+## Backend Setup
 
 ### Step 1: Clone & Install
 
@@ -179,168 +182,86 @@ curl http://localhost:8000/api/login \
 
 ---
 
-## 🎨 Frontend Setup
+## Frontend Setup
 
-### Step 1: Create & Install
+### Step 1: Navigate to Frontend Directory
 
 ```bash
-# Create folder & navigate
-mkdir Login_B4T
-cd Login_B4T
-
-# Create Next.js project
-npx create-next-app@latest frontend_b4t --yes
+# Masuk ke folder frontend
 cd frontend_b4t
-
-# Initialize shadcn/ui
-npx shadcn@latest init
-
-# Add button component
-npx shadcn@latest add button
-
-# Install dependencies
-npm install axios react-hook-form zod @hookform/resolvers react-icons
 ```
 
-### Step 2: Environment Configuration
+### Step 2: Install Dependencies
 
-Create `.env.local`:
+```bash
+# Install semua package yang dibutuhkan
+npm install
+```
+
+**Packages yang akan diinstall:**
+- Next.js 16.1.1
+- React 19.2.3
+- TypeScript 5
+- Tailwind CSS 4
+- shadcn/ui components
+- React Hook Form 7.69
+- Zod 4.2.1
+- Axios 1.13.2
+- React Icons 5.5.0
+
+### Step 3: Environment Configuration
+
+Buat file `.env.local` di root folder `frontend_b4t`:
+
+```bash
+# Buat file .env.local
+type nul > .env.local  # Windows
+```
+
+**Isi `.env.local`:**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ```
 
-### Step 3: Setup API Configuration
+**Pastikan backend sudah running** di `http://localhost:8000` sebelum start frontend.
 
-**Create `src/lib/api.ts`:**
-```typescript
-import axios from "axios";
-
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-```
-
-### Step 4: Setup Auth Service
-
-**Create `src/lib/auth.ts`:**
-```typescript
-import { api } from "./api";
-
-export type LoginPayload = {
-  username: string;
-  password: string;
-};
-
-export type RegisterPayload = {
-  name: string;
-  username: string;
-  email?: string;
-  password: string;
-};
-
-export async function login(data: LoginPayload) {
-  const res = await api.post("/login", data);
-  return res.data;
-}
-
-export async function register(data: RegisterPayload) {
-  const res = await api.post("/register", data);
-  return res.data;
-}
-
-export async function logout(token: string) {
-  const res = await api.post("/logout", {}, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-```
-
-### Step 5: Setup Form Validation
-
-**Create `src/lib/form-schema.ts`:**
-```typescript
-import { z } from "zod";
-
-export const signInFormSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
-
-export const signUpFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  username: z.string().min(1, "Username is required"),
-  email: z.string().email("Email is not valid").optional(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-```
-
-### Step 6: Setup User Service
-
-**Create `src/lib/user.ts`:**
-```typescript
-import { api } from "./api";
-
-export type User = {
-  id: number;
-  name: string;
-  username: string;
-  email: string | null;
-  role: "super_admin" | "admin" | "user";
-  is_approved: number;
-  created_at: string;
-};
-
-export async function getProfile(token: string) {
-  const res = await api.get("/me", {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-
-export async function getSuperAdminUsers(token: string) {
-  const res = await api.get("/super-admin/users", {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-
-export async function createUser(
-  payload: { name: string; username: string; email?: string; password: string },
-  role: "super_admin" | "admin",
-  token: string
-) {
-  const endpoint = role === "super_admin" 
-    ? "/super-admin/create-user" 
-    : "/admin/create-user";
-  
-  const res = await api.post(endpoint, payload, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-
-export async function approveUser(userId: number, token: string) {
-  const res = await api.post(`/approve-user/${userId}`, {}, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-```
-
-### Step 7: Start Frontend Server
+### Step 4: Start Frontend Server
 
 ```bash
 npm run dev
-# Server running at: http://localhost:3000
 ```
+
+**Output:**
+```
+  ▲ Next.js 16.1.1
+  - Local:        http://localhost:3000
+  - Ready in 2.3s
+```
+
+Frontend sekarang berjalan di: **http://localhost:3000**
+
+### Step 5: Verify Setup
+
+Buka browser dan akses:
+```
+http://localhost:3000/auth/Signin
+```
+
+**Test login dengan credentials:**
+
+**Super Admin:**
+- Username: `superadmin`
+- Password: `password123`
+
+**Admin:**
+- Username: `adminit`
+- Password: `password123`
+
+Jika berhasil login, akan redirect ke dashboard sesuai role. ✅
 
 ---
 
-## 📚 API Documentation
+## API Documentation
 
 ### Base URL
 ```
@@ -595,7 +516,7 @@ Authorization: Bearer {token}
 
 ---
 
-## 🏗 Architecture & Concepts
+## Architecture & Concepts
 
 ### Frontend Architecture
 
@@ -603,13 +524,13 @@ Authorization: Bearer {token}
 Next.js Route Groups digunakan untuk mengelompokkan halaman tanpa memengaruhi URL:
 
 **`(auth)` Group** - Halaman tanpa layout:
-- `/sign-in`
-- `/sign-up`
+- `/auth/Signin`
+- `/auth/Signup`
 
 **`(dashboard)` Group** - Halaman dengan layout lengkap:
-- `/dashboard`
-- `/profile`
-- `/settings`
+- `/admin` - Admin dashboard
+- `/super-admin` - Super Admin dashboard
+- `/user` - User dashboard
 
 #### 2. Service Layer Pattern
 Memisahkan logic bisnis dari UI components:
@@ -672,7 +593,7 @@ users table:
 
 ---
 
-## 👥 Roles & Permissions
+## Roles & Permissions
 
 | Action | Super Admin | Admin | User |
 |--------|:-----------:|:-----:|:----:|
@@ -693,7 +614,7 @@ users table:
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend Testing
 
@@ -741,7 +662,7 @@ npm run dev
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend Issues
 
@@ -814,7 +735,7 @@ npm install
 
 ---
 
-## 🔗 Resources
+## Resources
 
 ### Backend
 - [Laravel 8 Documentation](https://laravel.com/docs/8.x)
@@ -872,16 +793,6 @@ npm run lint
 
 ---
 
-## 📄 Important Notes
-
-- User yang register manual perlu approval
-- User login via Google langsung approved
-- Token disimpan di localStorage (frontend)
-- Password di-hash dengan bcrypt
-- CORS dikonfigurasi untuk localhost:3000
-- Timestamp database dalam UTC
-
----
 
 ## 📞 Support
 
