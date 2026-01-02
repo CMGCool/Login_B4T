@@ -41,7 +41,6 @@ export default function UserDashboardPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  // tentukan bagian hari
   const dayPart: DayPart = useMemo(() => {
     const h = now.getHours();
     if (h >= 5 && h < 12) return "morning";
@@ -55,7 +54,6 @@ export default function UserDashboardPage() {
     return "Good Night";
   }, [dayPart]);
 
-  // pesan berbeda-beda (dipilih dari list secara deterministik berdasarkan tanggal)
   const greetingSubtitle = useMemo(() => {
     const messages: Record<DayPart, string[]> = {
       morning: [
@@ -80,8 +78,6 @@ export default function UserDashboardPage() {
 
     const list = messages[dayPart];
 
-    // index deterministik agar tidak berubah-ubah setiap render:
-    // pakai tanggal (YYYYMMDD) + dayPart
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, "0");
     const d = String(now.getDate()).padStart(2, "0");
@@ -93,8 +89,7 @@ export default function UserDashboardPage() {
       seed = (seed * 31 + combined.charCodeAt(i)) >>> 0;
     }
 
-    const idx = seed % list.length;
-    return list[idx];
+    return list[seed % list.length];
   }, [dayPart, now]);
 
   const fetchMe = async () => {
@@ -108,23 +103,34 @@ export default function UserDashboardPage() {
     }
 
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/me`, {
+      const res = await axios.get(`${API_BASE_URL}/api/user/welcome`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       });
 
-      setMe({
-        name: res.data?.name ?? null,
-        email: res.data?.email ?? null,
-        role: res.data?.role ?? null,
-      });
+      // ✅ tahan banting: dukung banyak bentuk response
+      const data = res.data?.user ?? res.data?.data ?? res.data ?? {};
+
+      const name = data?.name ?? data?.full_name ?? data?.username ?? null;
+      const email = data?.email ?? data?.user_email ?? null;
+      const role = data?.role ?? "user";
+
+      const profile = { name, email, role };
+
+      setMe(profile);
+
+      // ✅ simpan untuk dipakai sidebar / komponen lain (agar "Account Unknown" hilang)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("profile", JSON.stringify(profile));
+      }
     } catch (e: any) {
       const status = e?.response?.status;
 
       if (status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("profile");
         router.replace("/auth/Signin");
         return;
       }
@@ -132,7 +138,7 @@ export default function UserDashboardPage() {
       setError(
         e?.response?.data?.message ||
           e?.message ||
-          "Gagal mengambil data user dari backend (/api/me)."
+          "Gagal mengambil data user dari backend (/api/user/welcome)."
       );
     } finally {
       setLoadingMe(false);
@@ -163,7 +169,6 @@ export default function UserDashboardPage() {
         </div>
       </div>
 
-      {/* Divider tipis */}
       <div className="mx-8 mt-5 border-b border-gray-200/60" />
 
       {/* Error */}
@@ -180,11 +185,16 @@ export default function UserDashboardPage() {
         <h2 className="text-xl font-semibold text-gray-900">
           {greeting},{" "}
           <span className="font-semibold">
-            {loadingMe ? "..." : me.name || "User"}
+            {loadingMe ? "..." : me.name || me.email || "User"}
           </span>
         </h2>
 
         <p className="mt-1 text-sm text-gray-500">{greetingSubtitle}</p>
+
+        {/* tampilkan email agar yakin sesuai user login */}
+        <p className="mt-3 text-sm text-gray-500">
+          {loadingMe ? "" : me.email ? `Signed in as ${me.email}` : ""}
+        </p>
       </div>
 
       <div className="h-12" />

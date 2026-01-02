@@ -5,16 +5,20 @@ import { z } from "zod";
    (username / email)
 ======================= */
 export const signInFormSchema = z.object({
+  // ❌ JANGAN pakai .email()
+  // karena bisa diisi username
   email: z
     .string()
-    .min(3, "Username atau email wajib diisi")
-    .max(100, "Terlalu panjang"),
+    .min(1, "Username / Email is required"),
 
   password: z
     .string()
     .min(1, "Password is required"),
 });
 
+/* =======================
+   SIGN UP
+======================= */
 /* =======================
    SIGN UP
 ======================= */
@@ -27,11 +31,13 @@ export const signUpFormSchema = z.object({
     .string()
     .min(3, "Username minimal 3 karakter"),
 
+  // ✅ email BOLEH kosong
   email: z
     .string()
+    .trim()
     .email("Email is not valid")
     .optional()
-    .or(z.literal("")), // ✅ kosong tidak error
+    .or(z.literal("")),
 
   password: z
     .string()

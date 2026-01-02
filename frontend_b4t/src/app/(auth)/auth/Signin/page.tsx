@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { signInFormSchema } from "@/lib/form-schema";
-import { login } from "@/lib/auth";
+import { login, loginWithGoogle } from "@/lib/auth";
 
 import {
   Form,
@@ -43,7 +43,7 @@ export default function SigninPage() {
       setError(null);
 
       const res = await login({
-        login: values.email, // email / username
+        login: values.email,
         password: values.password,
       });
 
@@ -54,7 +54,7 @@ export default function SigninPage() {
       } else if (role === "admin") {
         router.replace("/admin/dashboard");
       } else {
-        router.replace("/user/dashboard");
+        router.replace("/user/welcome");
       }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -80,9 +80,7 @@ export default function SigninPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-4 text-sm text-red-600 text-center">
-            {error}
-          </div>
+          <div className="mb-4 text-sm text-red-600 text-center">{error}</div>
         )}
 
         {/* Form */}
@@ -101,7 +99,7 @@ export default function SigninPage() {
                     <Input
                       {...field}
                       value={field.value ?? ""}
-                      placeholder="Enter your email"
+                      placeholder="Enter your Username"
                       type="text"
                       autoComplete="username"
                       className="h-11"
@@ -143,6 +141,46 @@ export default function SigninPage() {
               className="w-full h-11 bg-blue-600 hover:bg-blue-700"
             >
               {loading ? "Signing in..." : "Sign in"}
+            </Button>
+
+            {/* Separator */}
+            <div className="my-2 relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-500">or</span>
+              </div>
+            </div>
+
+            {/* ✅ Google SSO Button (dipindah ke bawah) */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={loginWithGoogle}
+              className="w-full h-11"
+            >
+              <span className="flex items-center justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                  <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M46.5 24.5c0-1.6-.14-3.14-.41-4.63H24v9.26h12.7c-.55 2.96-2.2 5.47-4.67 7.18l7.2 5.59c4.2-3.88 6.27-9.6 6.27-16.4z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M10.54 28.59c-.48-1.44-.76-2.97-.76-4.59s.28-3.15.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 48c6.48 0 11.93-2.13 15.9-5.81l-7.2-5.59c-2 1.34-4.56 2.13-8.7 2.13-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                  />
+                </svg>
+                Continue with Google
+              </span>
             </Button>
 
             {/* Footer */}
