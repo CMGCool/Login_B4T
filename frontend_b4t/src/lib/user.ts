@@ -29,6 +29,14 @@ export async function getSuperAdminUsers(): Promise<User[]> {
 }
 
 /* =======================
+   ✅ LIST USERS (ADMIN) - OPTIONAL kalau kamu butuh halaman admin/users
+   ======================= */
+export async function getAdminUsers(): Promise<User[]> {
+  const res = await api.get("/admin/users");
+  return res.data?.data ?? [];
+}
+
+/* =======================
    ✅ CREATE USER (SUPER ADMIN / ADMIN)
    ======================= */
 export type CreateUserPayload = {
@@ -57,6 +65,13 @@ export async function createUser(
 /* =======================
    ✅ APPROVE USER
    ======================= */
+/**
+ * ✅ SESUAI routes/api.php kamu:
+ * POST /api/approve-user/{id}
+ * middleware: auth:sanctum + role:admin,super_admin
+ *
+ * Jadi endpoint approve ini SAMA untuk admin & super_admin.
+ */
 export async function approveUser(userId: number) {
   const res = await api.post(`/approve-user/${userId}`);
   return res.data;
@@ -75,9 +90,6 @@ export type UpdateUserPayload = {
 export async function updateUser(userId: number, payload: UpdateUserPayload) {
   /**
    * ✅ SESUAI backend routes/api.php kamu:
-   * Route::put('/users/{id}', [UserManagementController::class, 'updateUser']);
-   *
-   * Jadi endpoint-nya:
    * PUT /api/users/{id}
    */
   const res = await api.put(`/users/${userId}`, payload);
@@ -90,9 +102,6 @@ export async function updateUser(userId: number, payload: UpdateUserPayload) {
 export async function deleteUser(userId: number) {
   /**
    * ✅ SESUAI backend routes/api.php kamu:
-   * Route::delete('/users/{id}', [UserManagementController::class, 'deleteUser']);
-   *
-   * Jadi endpoint-nya:
    * DELETE /api/users/{id}
    */
   const res = await api.delete(`/users/${userId}`);

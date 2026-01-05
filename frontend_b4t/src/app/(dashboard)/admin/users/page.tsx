@@ -196,8 +196,8 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      // ✅ ADMIN approve endpoint
-      await axiosAuth.post(`/api/admin/approve-user/${selectedUser.id}`);
+      // ✅ approve endpoint (sesuai routes/api.php)
+      await axiosAuth.post(`/api/approve-user/${selectedUser.id}`);
 
       // Update UI langsung
       setUsers((prev) =>
@@ -615,7 +615,7 @@ export default function AdminUsersPage() {
                     setAddForm((s) => ({ ...s, name: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="e.g. Syfa"
+                  placeholder="e.g. Cipta Azzahra"
                 />
               </div>
 
@@ -629,7 +629,7 @@ export default function AdminUsersPage() {
                     setAddForm((s) => ({ ...s, username: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="e.g. cipaa"
+                  placeholder="e.g. ciptaazzahra"
                 />
               </div>
 
@@ -643,7 +643,7 @@ export default function AdminUsersPage() {
                     setAddForm((s) => ({ ...s, email: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="e.g. syfa@mail.com"
+                  placeholder="e.g. ciptaazzahra@gmail.com"
                   type="email"
                 />
               </div>
