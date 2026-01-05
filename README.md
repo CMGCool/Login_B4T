@@ -1,83 +1,121 @@
-# Login B4T - Fullstack Authentication System
+# 🔐 Login B4T - Fullstack Authentication System
 
-Sistem autentikasi fullstack dengan role-based access control, dibangun dengan Laravel 8 (Backend) dan Next.js 16 (Frontend).
+> Sistem autentikasi fullstack dengan role-based access control, dibangun dengan Laravel 8 (Backend) dan Next.js 16 (Frontend).
+
+[![Laravel](https://img.shields.io/badge/Laravel-8.75-FF2D20?style=flat&logo=laravel)](https://laravel.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.1-000000?style=flat&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Backend Setup](#backend-setup)
-- [Frontend Setup](#frontend-setup)
-- [API Documentation](#api-documentation)
-- [Architecture & Concepts](#architecture--concepts)
-- [Roles & Permissions](#roles--permissions)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Resources](#resources)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Development Guide](#-development-guide)
+- [Setup Guide](#-setup-guide)
+- [API Documentation](#-api-documentation)
+- [Architecture](#-architecture)
+- [Testing](#-testing)
+- [Troubleshooting](#-troubleshooting)
+- [Resources](#-resources)
 
 ---
 
-## Overview
+## 🎯 Overview
 
-Login B4T adalah sistem autentikasi lengkap yang menyediakan:
+Login B4T adalah sistem autentikasi lengkap yang menyediakan user management dengan approval workflow, multiple authentication methods, dan role-based access control untuk aplikasi modern.
 
-- ✅ User registration dengan approval workflow
-- ✅ Login dengan username/password dan Google OAuth
-- ✅ Role-based access control (Super Admin, Admin, User)
-- ✅ User management (CRUD operations)
+### Demo Credentials
 
-
-**Demo Credentials:**
-
-**Super Admin:**
-- Username: `superadmin`
-- Password: `password123`
-
-**Admin:**
-- Username: `adminit`
-- Password: `password123`
+| Role | Username | Password |
+|------|----------|----------|
+| **Super Admin** | `superadmin` | `password123` |
+| **Admin** | `adminit` | `password123` |
 
 ---
 
-## Tech Stack
+## ✨ Features
+
+- 🔑 **User Authentication** - Login dengan username/password
+- 🌐 **Google OAuth** - Login dengan akun Google
+- 👥 **User Registration** - Registrasi dengan approval workflow
+- 🛡️ **Role-Based Access** - Super Admin, Admin, User roles
+- 📊 **Dashboard Statistics** - Real-time statistics
+- ✏️ **User Management** - CRUD operations untuk users
+- 🎨 **Modern UI** - Beautiful interface dengan shadcn/ui
+- 📱 **Responsive Design** - Mobile-friendly
+- 🔐 **Token Authentication** - Laravel Sanctum
+- ✅ **Form Validation** - Client & server-side validation
+
+---
+
+## 🛠 Tech Stack
 
 ### Backend
-- **Laravel** 8.75 - PHP Framework
-- **Laravel Sanctum** 2.15 - Token Authentication
-- **Laravel Socialite** 5.5 - Google OAuth
-- **MySQL** 5.7+ - Database
-- **Guzzle** 7.0 - HTTP Client
-- **CORS** Support
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Laravel** | 8.75 | PHP Framework |
+| **Laravel Sanctum** | 2.15 | Token Authentication |
+| **Laravel Socialite** | 5.5 | Google OAuth |
+| **MySQL** | 5.7+ | Database |
+| **Guzzle** | 7.0 | HTTP Client |
 
 ### Frontend
-- **Next.js** 16.1.1 (App Router)
-- **React** 19.2.3
-- **TypeScript** 5
-- **Tailwind CSS** 4
-- **shadcn/ui** - UI Components
-- **React Hook Form** 7.69 - Form Management
-- **Zod** 4.2.1 - Schema Validation
-- **Axios** 1.13.2 - HTTP Client
-- **React Icons** 5.5.0
-- **ESLint** 9
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Next.js** | 16.1.1 | React Framework |
+| **React** | 19.2.3 | UI Library |
+| **TypeScript** | 5 | Type Safety |
+| **Tailwind CSS** | 4 | Styling |
+| **shadcn/ui** | - | UI Components |
+| **React Hook Form** | 7.69 | Form Management |
+| **Zod** | 4.2.1 | Validation |
+| **Axios** | 1.13.2 | HTTP Client |
 
 ---
 
-## Prerequisites
+## 📋 Prerequisites
 
-### Backend Requirements
+### System Requirements
 
-| Tool | Version | Download |
-|------|---------|----------|
-| PHP | 7.3+ or 8.0+ | https://www.php.net/downloads |
-| Composer | Latest | https://getcomposer.org/download |
-| MySQL | 5.7+ | https://www.mysql.com/downloads |
+#### Backend
+- **PHP**: 7.3 or 8.0
+- **Composer**: 2.6+ or 2.7
+- **MySQL**: 5.7
+- **XAMPP** : For local development
 
-**PHP Extensions Required:**
+#### Frontend
+- **Node.js**: 20.9
+- **npm**: 11.6.2
+
+### Verify Installations
+
+```bash
+# Check PHP version
+php --version
+
+# Check Composer version
+composer --version
+
+# Check MySQL version
+mysql --version
+
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
 ```
+
+### Required PHP Extensions
+
+Ensure these extensions are enabled in `php.ini`:
+
+```ini
 extension=openssl
 extension=mbstring
 extension=ctype
@@ -87,48 +125,50 @@ extension=pdo
 extension=pdo_mysql
 ```
 
-### Frontend Requirements
-
-| Tool | Version |
-|------|---------|
-| Node.js | 20.9+ |
-| npm | Latest |
-
-**Verify installations:**
-```bash
-php --version
-composer --version
-mysql --version
-node --version
-npm --version
-```
-
 ---
 
-## Backend Setup
+## 💻 Development Guide
 
-### Step 1: Clone & Install
+Panduan lengkap untuk membangun project dari awal.
+
+### Backend Development (Laravel)
+
+<details>
+<summary><b>📦 Step 1-5: Setup Project & Dependencies</b></summary>
+
+#### 1. Create Laravel Project
 
 ```bash
-# Clone repository
-git clone https://github.com/CMGcool/backend_login_b4t.git
-cd backend_login_b4t
+# Create project directory
+mkdir Login_B4T && cd Login_B4T
 
-# Install dependencies
-composer install
+# Create new Laravel 8 project
+composer create-project laravel/laravel backend_login_b4t "8.*"
+cd backend_login_b4t
 ```
 
-### Step 2: Environment Configuration
+#### 2. Install Required Packages
 
 ```bash
-# Copy environment file
-cp .env.example .env
+composer require laravel/sanctum laravel/socialite guzzlehttp/guzzle fruitcake/laravel-cors doctrine/dbal
+```
 
-# Generate application key
+**Packages Installed:**
+- `laravel/sanctum` → Token authentication
+- `laravel/socialite` → OAuth integration
+- `guzzlehttp/guzzle` → HTTP client
+- `fruitcake/laravel-cors` → CORS support
+- `doctrine/dbal` → Database tools
+
+#### 3. Configure Environment
+
+```bash
+cp .env.example .env
 php artisan key:generate
 ```
 
 **Edit `.env` file:**
+
 ```env
 APP_NAME="Backend Login B4T"
 APP_ENV=local
@@ -142,126 +182,471 @@ DB_DATABASE=backend_login_b4t
 DB_USERNAME=root
 DB_PASSWORD=your_mysql_password
 
-# Google OAuth (Optional)
-GOOGLE_CLIENT_ID=your_client_id
-GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
 
-# Frontend URL for CORS
 FRONTEND_URL=http://localhost:3000
 ```
 
-### Step 3: Database Setup
+#### 4. Setup Database
 
+**Via MySQL CLI:**
 ```bash
-# Create database via MySQL CLI
 mysql -u root -p
 CREATE DATABASE backend_login_b4t;
 EXIT;
-
-# Run migrations
-php artisan migrate
-
-# Seed super admin
-php artisan db:seed --class=SuperAdminSeeder
 ```
 
-### Step 4: Start Backend Server
+**Via XAMPP phpMyAdmin:**
+1. Open `http://localhost/phpmyadmin`
+2. Click "New" → Create database
+3. Name: `backend_login_b4t`
+4. Collation: `utf8mb4_unicode_ci`
 
+#### 5. Configure Sanctum
+
+```bash
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+```
+
+**Update `app/Http/Kernel.php`:**  
+Add Sanctum middleware to API middleware group.
+
+</details>
+
+<details>
+<summary><b>🗄️ Step 6-7: Database & Models</b></summary>
+
+#### 6. Create Migrations
+
+```bash
+php artisan make:migration add_google_sso_fields_to_users_table --table=users
+```
+
+**Add these fields to users table:**
+- `username` (string, unique) - For login
+- `google_id` (string, nullable) - Google OAuth ID
+- `avatar` (string, nullable) - Profile picture URL
+- `provider` (string, nullable) - OAuth provider
+- `role` (enum: super_admin, admin, user) - User role
+- `is_approved` (boolean, default: 0) - Approval status
+- `email_verified_at` (timestamp, nullable) - Email verification
+
+**Run migrations:**
+```bash
+php artisan migrate
+```
+
+#### 7. Update User Model
+
+**File:** `app/Models/User.php`
+
+**Key Updates:**
+- Use `HasApiTokens` trait (from Sanctum)
+- Add to `fillable`: name, username, email, password, role, is_approved, google_id, avatar, provider
+- Add to `hidden`: password, remember_token
+- Add `casts`: is_approved (boolean), email_verified_at (datetime)
+
+</details>
+
+<details>
+<summary><b>🎮 Step 8-10: Controllers, Middleware & Routes</b></summary>
+
+#### 8. Create Controllers
+
+**AuthController (`app/Http/Controllers/Api/AuthController.php`):**
+
+**Methods:**
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `register()` | Register new user (pending approval) | Message |
+| `login()` | Login & generate token | Token + User |
+| `logout()` | Revoke current token | Message |
+| `me()` | Get authenticated user | User data |
+| `redirectToGoogle()` | Redirect to Google OAuth | Redirect |
+| `handleGoogleCallback()` | Handle Google callback | Token + User |
+
+**AdminController:**
+| Method | Description |
+|--------|-------------|
+| `getUsers()` | List all users (exclude admins) |
+| `createUser()` | Create user (auto approved) |
+| `approveUser($id)` | Approve pending user |
+| `dashboardStats()` | Get statistics |
+
+**SuperAdminController:**
+| Method | Description |
+|--------|-------------|
+| `getUsers()` | List users & admins |
+| `createAdmin()` | Create new admin |
+| `createUser()` | Create new user |
+| `dashboardStats()` | Get full statistics |
+
+**UserController:**
+| Method | Description |
+|--------|-------------|
+| `updateUser($id)` | Update user data |
+| `deleteUser($id)` | Delete user |
+
+#### 9. Create Middleware
+
+**RoleMiddleware (`app/Http/Middleware/RoleMiddleware.php`):**
+
+**Purpose:** Check user role for protected routes
+
+**Usage:**
+```php
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function() {
+    // Admin routes
+});
+```
+
+#### 10. Setup Routes
+
+**File:** `routes/api.php`
+
+**Public Routes:**
+```php
+POST   /register                    # Register user
+POST   /login                       # Login
+GET    /auth/google/redirect        # Google OAuth redirect
+GET    /auth/google/callback        # Google OAuth callback
+```
+
+**Protected Routes:**
+```php
+POST   /logout                      # Logout (auth:sanctum)
+GET    /me                          # Get profile (auth:sanctum)
+
+# Admin routes (role:admin)
+GET    /admin/users
+POST   /admin/create-user
+POST   /approve-user/{id}
+GET    /admin/dashboard-stats
+
+# Super Admin routes (role:super_admin)
+GET    /super-admin/users
+POST   /super-admin/create-admin
+POST   /super-admin/create-user
+GET    /super-admin/dashboard-stats
+
+# Common routes
+PUT    /users/{id}
+DELETE /users/{id}
+```
+
+</details>
+
+<details>
+<summary><b>🌱 Step 11-13: Seeders, CORS & Google OAuth</b></summary>
+
+#### 11. Create Seeders
+
+```bash
+php artisan make:seeder SuperAdminSeeder
+php artisan make:seeder AdminSeeder
+```
+
+**SuperAdminSeeder:** Creates `superadmin/password123`  
+**AdminSeeder:** Creates `adminit/password123`
+
+**Run seeders:**
+```bash
+php artisan db:seed
+```
+
+#### 12. Configure CORS
+
+**File:** `config/cors.php`
+
+```php
+'paths' => ['api/*'],
+'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
+'allowed_methods' => ['*'],
+'allowed_headers' => ['*'],
+'supports_credentials' => true,
+```
+
+#### 13. Configure Google OAuth
+
+**File:** `config/services.php`
+
+```php
+'google' => [
+    'client_id' => env('GOOGLE_CLIENT_ID'),
+    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    'redirect' => env('GOOGLE_REDIRECT_URI'),
+],
+```
+
+**Get Google Credentials:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create project → Enable Google+ API
+3. Create OAuth 2.0 credentials
+4. Add redirect URI: `http://localhost:8000/api/auth/google/callback`
+5. Copy Client ID & Secret to `.env`
+
+</details>
+
+**Start Backend Server:**
 ```bash
 php artisan serve
-# Server running at: http://localhost:8000
-```
-
-**Test backend:**
-```bash
-curl http://localhost:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"superadmin","password":"password123"}'
+# Backend running at http://localhost:8000
 ```
 
 ---
 
-## Frontend Setup
+### Frontend Development (Next.js)
 
-### Step 1: Navigate to Frontend Directory
+<details>
+<summary><b>📦 Step 1-4: Setup Project & Dependencies</b></summary>
+
+#### 1. Create Next.js Project
 
 ```bash
-# Masuk ke folder frontend
+cd ..
+npx create-next-app@latest frontend_b4t --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --yes
 cd frontend_b4t
 ```
 
-### Step 2: Install Dependencies
+#### 2. Initialize shadcn/ui
 
 ```bash
-# Install semua package yang dibutuhkan
-npm install
+npx shadcn@latest init --yes
+npx shadcn@latest add button input card form label table dialog
 ```
 
-**Packages yang akan diinstall:**
-- Next.js 16.1.1
-- React 19.2.3
-- TypeScript 5
-- Tailwind CSS 4
-- shadcn/ui components
-- React Hook Form 7.69
-- Zod 4.2.1
-- Axios 1.13.2
-- React Icons 5.5.0
-
-### Step 3: Environment Configuration
-
-Buat file `.env.local` di root folder `frontend_b4t`:
+#### 3. Install Dependencies
 
 ```bash
-# Buat file .env.local
-type nul > .env.local  # Windows
+# Core packages
+npm install axios react-hook-form zod @hookform/resolvers react-icons
+
+# Radix UI components
+npm install @radix-ui/react-label @radix-ui/react-slot
+
+# Utility packages
+npm install class-variance-authority clsx tailwind-merge lucide-react
 ```
 
-**Isi `.env.local`:**
+#### 4. Configure Environment
+
+**Create `.env.local`:**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ```
 
-**Pastikan backend sudah running** di `http://localhost:8000` sebelum start frontend.
+</details>
 
-### Step 4: Start Frontend Server
+<details>
+<summary><b>🔧 Step 5-7: API Client, Services & Context</b></summary>
 
+#### 5. Setup API Client
+
+**File:** `src/lib/api.ts`
+
+```typescript
+import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Auto-inject token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+```
+
+#### 6. Create Services
+
+**File:** `src/lib/auth.ts`
+
+**Functions:**
+- `login(data)` → POST /login
+- `register(data)` → POST /register
+- `logout()` → POST /logout
+- `getProfile()` → GET /me
+
+**File:** `src/lib/user.ts`
+
+**Functions:**
+- `getAdminUsers(token)` → GET /admin/users
+- `getSuperAdminUsers(token)` → GET /super-admin/users
+- `createUser(data, role, token)` → POST /admin or /super-admin create-user
+- `createAdmin(data, token)` → POST /super-admin/create-admin
+- `updateUser(id, data, token)` → PUT /users/{id}
+- `deleteUser(id, token)` → DELETE /users/{id}
+- `approveUser(id, token)` → POST /approve-user/{id}
+
+**File:** `src/lib/validations.ts`
+
+**Schemas:**
+```typescript
+export const loginSchema = z.object({
+  username: z.string().min(1, 'Username required'),
+  password: z.string().min(1, 'Password required'),
+});
+
+export const registerSchema = z.object({
+  name: z.string().min(1, 'Name required'),
+  username: z.string().min(1, 'Username required'),
+  email: z.string().email().optional(),
+  password: z.string().min(6, 'Min 6 characters'),
+});
+```
+
+#### 7. Setup Auth Context
+
+**File:** `src/contexts/AuthContext.tsx`
+
+**Provides:**
+- `user` - Current user data
+- `token` - Access token
+- `login(token, user)` - Save to localStorage
+- `logout()` - Clear localStorage
+- `isLoading` - Loading state
+
+</details>
+
+<details>
+<summary><b>🎨 Step 8-10: Routes, Components & Pages</b></summary>
+
+#### 8. Create Route Structure
+
+```
+src/app/
+├── (auth)/
+│   └── auth/
+│       ├── Signin/page.tsx     → /auth/Signin
+│       ├── Signup/page.tsx     → /auth/Signup
+│       └── layout.tsx          # Clean layout
+│
+└── (dashboard)/
+    ├── admin/
+    │   ├── dashboard/page.tsx  → /admin/dashboard
+    │   └── user/page.tsx       → /admin/user
+    ├── super-admin/
+    │   ├── admin/page.tsx      → /super-admin/admin
+    │   ├── dashboard/page.tsx  → /super-admin/dashboard
+    │   └── users/page.tsx      → /super-admin/users
+    ├── user/
+    │   └── welcome/page.tsx    → /user/welcome
+    └── layout.tsx              # With header/sidebar
+```
+
+#### 9. Create Components
+
+**Auth Components:**
+- `LoginForm` → Login form with validation
+- `RegisterForm` → Register form with validation
+- `GoogleButton` → Google OAuth button
+
+**Dashboard Components:**
+- `Header` → Top navigation with logout
+- `Sidebar` → Side navigation menu
+- `UserTable` → Display user list
+- `CreateUserDialog` → Modal for create user
+- `EditUserDialog` → Modal for edit user
+- `StatsCards` → Statistics cards
+
+#### 10. Update Root Layout
+
+**File:** `src/app/layout.tsx`
+
+```typescript
+import { AuthProvider } from '@/contexts/AuthContext';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+</details>
+
+**Start Frontend Server:**
 ```bash
 npm run dev
+# Frontend running at http://localhost:3000
 ```
-
-**Output:**
-```
-  ▲ Next.js 16.1.1
-  - Local:        http://localhost:3000
-  - Ready in 2.3s
-```
-
-Frontend sekarang berjalan di: **http://localhost:3000**
-
-### Step 5: Verify Setup
-
-Buka browser dan akses:
-```
-http://localhost:3000/auth/Signin
-```
-
-**Test login dengan credentials:**
-
-**Super Admin:**
-- Username: `superadmin`
-- Password: `password123`
-
-**Admin:**
-- Username: `adminit`
-- Password: `password123`
-
-Jika berhasil login, akan redirect ke dashboard sesuai role. ✅
 
 ---
 
-## API Documentation
+## 🚀 Setup Guide
+
+Panduan untuk setup project yang sudah ada (clone repository).
+
+### Backend Setup
+
+```bash
+# Clone repository
+git clone https://github.com/CMGcool/backend_login_b4t.git
+cd backend_login_b4t
+
+# Install dependencies
+composer install
+
+# Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# Configure .env (edit file manually)
+# DB_DATABASE, DB_USERNAME, DB_PASSWORD
+# GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# FRONTEND_URL
+
+# Setup database
+mysql -u root -p
+CREATE DATABASE backend_login_b4t;
+EXIT;
+
+# Run migrations & seeders
+php artisan migrate
+php artisan db:seed
+
+# Start server
+php artisan serve
+```
+
+**Backend URL:** `http://localhost:8000`
+
+---
+
+### Frontend Setup
+
+```bash
+# Navigate to frontend
+cd frontend_b4t
+
+# Install dependencies
+npm install
+
+# Create environment file
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api" > .env.local
+
+# Start server
+npm run dev
+```
+
+**Frontend URL:** `http://localhost:3000`
+
+**Verify Setup:** Open `http://localhost:3000/auth/Signin`
+
+---
+
+## 📚 API Documentation
 
 ### Base URL
 ```
@@ -269,8 +654,8 @@ http://localhost:8000/api
 ```
 
 ### Authentication
-Gunakan Bearer token di header untuk protected endpoints:
-```
+All protected endpoints require:
+```http
 Authorization: Bearer {token}
 ```
 
@@ -278,13 +663,11 @@ Authorization: Bearer {token}
 
 ### Public Endpoints
 
-#### 1. Register User
+#### Register User
 ```http
 POST /register
-```
+Content-Type: application/json
 
-**Request Body:**
-```json
 {
   "name": "John Doe",
   "username": "johndoe",
@@ -302,13 +685,11 @@ POST /register
 
 ---
 
-#### 2. Login
+#### Login
 ```http
 POST /login
-```
+Content-Type: application/json
 
-**Request Body:**
-```json
 {
   "username": "superadmin",
   "password": "password123"
@@ -324,276 +705,222 @@ POST /login
     "id": 1,
     "name": "Super Admin",
     "username": "superadmin",
-    "email": "superadmin@example.com",
-    "role": "super_admin",
-    "is_approved": 1
+    "role": "super_admin"
   }
 }
 ```
 
 ---
 
-#### 3. Google OAuth Redirect
+#### Google OAuth
+
+**Redirect:**
 ```http
 GET /auth/google/redirect
 ```
 
-Redirect ke halaman login Google.
-
----
-
-#### 4. Google OAuth Callback
+**Callback:**
 ```http
 GET /auth/google/callback?code={code}&state={state}
 ```
-
-Callback dari Google. User otomatis dibuat & approved.
-
-**Response:**
-Redirect ke: `http://localhost:3000/sso?token={token}&role={role}`
 
 ---
 
 ### Protected Endpoints
 
-#### Admin Endpoints
-
-##### Get All Users
+#### Get Profile
 ```http
-GET /admin/users
+GET /me
 Authorization: Bearer {token}
 ```
 
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": 2,
-      "name": "John Doe",
-      "username": "johndoe",
-      "role": "user",
-      "is_approved": 1
-    }
-  ]
-}
-```
-
----
-
-##### Create User
-```http
-POST /admin/create-user
-Authorization: Bearer {token}
-```
-
-**Request Body:**
-```json
-{
-  "name": "Jane Doe",
-  "username": "janedoe",
-  "email": "jane@example.com",
-  "password": "password123"
-}
-```
-
----
-
-##### Update User
-```http
-PUT /users/{id}
-Authorization: Bearer {token}
-```
-
-**Request Body:**
-```json
-{
-  "name": "Updated Name",
-  "username": "newusername"
-}
-```
-
----
-
-##### Delete User
-```http
-DELETE /users/{id}
-Authorization: Bearer {token}
-```
-
----
-
-##### Approve User
-```http
-POST /approve-user/{id}
-Authorization: Bearer {token}
-```
-
----
-
-##### Dashboard Stats
-```http
-GET /admin/dashboard-stats
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "data": {
-    "total_users": 10,
-    "total_approved": 9,
-    "total_pending": 1
-  }
-}
-```
-
----
-
-#### Super Admin Endpoints
-
-##### Create Admin
-```http
-POST /super-admin/create-admin
-Authorization: Bearer {token}
-```
-
-**Request Body:**
-```json
-{
-  "name": "Admin User",
-  "username": "adminuser",
-  "email": "admin@example.com",
-  "password": "password123"
-}
-```
-
----
-
-##### Get All Users & Admins
-```http
-GET /super-admin/users
-Authorization: Bearer {token}
-```
-
----
-
-##### Dashboard Stats
-```http
-GET /super-admin/dashboard-stats
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "data": {
-    "total_users": 10,
-    "total_admins": 3,
-    "total_approved": 13,
-    "total_pending": 0,
-    "total_all": 13
-  }
-}
-```
-
----
-
-#### Common Endpoints
-
-##### Logout
+#### Logout
 ```http
 POST /logout
 Authorization: Bearer {token}
 ```
 
-**Response (200):**
-```json
-{
-  "message": "Logout berhasil"
-}
-```
+---
+
+### Admin Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/admin/users` | List all users |
+| POST | `/admin/create-user` | Create new user |
+| POST | `/approve-user/{id}` | Approve user |
+| GET | `/admin/dashboard-stats` | Get statistics |
 
 ---
 
-## Architecture & Concepts
+### Super Admin Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/super-admin/users` | List users & admins |
+| POST | `/super-admin/create-admin` | Create admin |
+| POST | `/super-admin/create-user` | Create user |
+| GET | `/super-admin/dashboard-stats` | Full statistics |
+
+---
+
+### User Management Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| PUT | `/users/{id}` | Update user |
+| DELETE | `/users/{id}` | Delete user |
+
+---
+
+## 🏗 Architecture
 
 ### Frontend Architecture
 
-#### 1. Route Groups
-Next.js Route Groups digunakan untuk mengelompokkan halaman tanpa memengaruhi URL:
+#### Route Groups
 
-**`(auth)` Group** - Halaman tanpa layout:
-- `/auth/Signin`
-- `/auth/Signup`
+```
+(auth)/            → Route group (invisible in URL)
+  └── auth/        → Actual path
+      ├── Signin/  → URL: /auth/Signin
+      └── Signup/  → URL: /auth/Signup
 
-**`(dashboard)` Group** - Halaman dengan layout lengkap:
-- `/admin` - Admin dashboard
-- `/super-admin` - Super Admin dashboard
-- `/user` - User dashboard
+(dashboard)/       → Route group (invisible in URL)
+  ├── admin/
+  │   ├── dashboard/ → URL: /admin/dashboard
+  │   └── users/ → URL: /admin/users
+  ├── users/
+  │   └── dashboard/ → URL: /users/welcome
+  └── super-admin/
+      ├── dashboard/ → URL: /super-admin/dashboard
+      ├── Admin/ → URL: /super-admin/admin
+      └── users/ → URL: /super-admin/users
+```
 
-#### 2. Service Layer Pattern
-Memisahkan logic bisnis dari UI components:
+**Benefits:**
+- Organize routes logically
+- Different layouts per group
+- Clean URL structure
+
+---
+
+#### Service Layer Pattern
 
 ```
 src/lib/
-├── api.ts          # Axios instance global
-├── auth.ts         # Auth API handlers
-├── user.ts         # User API handlers
-└── form-schema.ts  # Zod validation schemas
+├── api.ts          # Axios instance with interceptors
+├── auth.ts         # Authentication services
+├── user.ts         # User management services
+└── validations.ts  # Zod validation schemas
 ```
 
-**Keuntungan:**
-- UI components fokus pada tampilan
-- API logic tersentralisasi
-- Mudah testing & maintenance
-- Konsisten di seluruh aplikasi
+**Benefits:**
+- Separation of concerns
+- Reusable API calls
+- Centralized logic
+- Type safety
+- Easy testing
 
-#### 3. Form Validation Flow
-```
-User Input → Zod Schema → React Hook Form → API Handler → Backend
-```
+---
 
-- **Zod**: Mendefinisikan aturan validasi
-- **React Hook Form**: Mengelola state form
-- **API Handler**: Komunikasi dengan backend
+#### Authentication Flow
+
+```
+┌─────────────┐
+│ Login Form  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Validate   │  (Zod + React Hook Form)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  API Call   │  (Axios)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Save Token  │  (localStorage + Context)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Redirect   │  (Based on role)
+└─────────────┘
+```
 
 ---
 
 ### Backend Architecture
 
-#### 1. Laravel Sanctum Authentication
-Token-based authentication tanpa expiry:
+#### Laravel Sanctum Flow
 
 ```
-Login → Generate Token → Store in DB → Return to Frontend
-Protected Route → Verify Token → Allow Access
-```
+┌──────────┐
+│  Login   │
+└────┬─────┘
+     │
+     ▼
+┌──────────────┐
+│ Generate     │
+│ Token        │
+└────┬─────────┘
+     │
+     ▼
+┌──────────────┐
+│ Store in DB  │
+└────┬─────────┘
+     │
+     ▼
+┌──────────────┐
+│ Return Token │
+└──────────────┘
 
-#### 2. Role-Based Middleware
-```php
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function() {
-    // Admin routes
-});
-```
-
-#### 3. Database Structure
-```
-users table:
-├── id
-├── name
-├── username (unique)
-├── email (nullable, unique)
-├── password (hashed)
-├── role (super_admin|admin|user)
-├── is_approved (0|1)
-├── google_id (nullable)
-└── timestamps
+API Request:
+┌──────────────┐
+│ Verify Token │
+└────┬─────────┘
+     │
+     ▼
+┌──────────────┐
+│ Authenticate │
+│ User         │
+└────┬─────────┘
+     │
+     ▼
+┌──────────────┐
+│ Process      │
+│ Request      │
+└──────────────┘
 ```
 
 ---
 
-## Roles & Permissions
+#### Database Schema
+
+```
+users table:
+├── id (primary key)
+├── name (string)
+├── username (string, unique)
+├── email (string, nullable, unique)
+├── google_id (string, nullable)
+├── avatar (string, nullable)
+├── provider (string, nullable)
+├── email_verified_at (timestamp, nullable)
+├── password (string, hashed)
+├── role (enum: super_admin|admin|user)
+├── is_approved (boolean, default: 0)
+├── remember_token (string, nullable)
+├── created_at (timestamp)
+└── updated_at (timestamp)
+```
+
+---
+
+#### Roles & Permissions
 
 | Action | Super Admin | Admin | User |
 |--------|:-----------:|:-----:|:----:|
@@ -603,211 +930,242 @@ users table:
 | Edit Admin | ✅ | ❌ | ❌ |
 | Delete User | ✅ | ✅* | ❌ |
 | Delete Admin | ✅ | ❌ | ❌ |
+| Approve User | ✅ | ✅ | ❌ |
 | View Users | ✅ | ✅ | ❌ |
 | View Admins | ✅ | ❌ | ❌ |
-| Approve User | ✅ | ✅ | ❌ |
 
-**Legend:**
-- ✅ = Allowed
-- ❌ = Not Allowed
-- ✅* = Conditional (user role only)
+*Admin can only manage regular users, not admins
 
 ---
 
-## Testing
+## 🧪 Testing
 
 ### Backend Testing
 
-**Test with cURL:**
+#### Using cURL
+
+**Test Login:**
 ```bash
-# Login
 curl -X POST http://localhost:8000/api/login \
   -H "Content-Type: application/json" \
   -d '{"username":"superadmin","password":"password123"}'
+```
 
-# Save token
+**Test Protected Endpoint:**
+```bash
+# Save token from login response
 TOKEN="1|abc123xyz..."
 
-# Test protected endpoint
+# Test endpoint
 curl -X GET http://localhost:8000/api/super-admin/users \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-**Test with Postman:**
-1. POST `http://localhost:8000/api/login`
-2. Copy token from response
-3. Add to headers: `Authorization: Bearer {token}`
-4. Test other endpoints
+#### Using Postman
+
+1. **Login Request:**
+   - Method: POST
+   - URL: `http://localhost:8000/api/login`
+   - Body (JSON): `{"username":"superadmin","password":"password123"}`
+
+2. **Copy Token** from response
+
+3. **Protected Request:**
+   - Add Header: `Authorization: Bearer {token}`
+   - Test any protected endpoint
 
 ---
 
 ### Frontend Testing
 
-**Manual Testing Flow:**
-1. Open `http://localhost:3000/sign-in`
-2. Login with credentials
-3. Check token saved in localStorage
-4. Navigate to dashboard
-5. Test CRUD operations
-6. Test logout
+#### Manual Testing Flow
 
-**Component Testing:**
-```bash
-# Run dev server
-npm run dev
+1. ✅ Open `http://localhost:3000/auth/Signin`
+2. ✅ Login with `superadmin` / `password123`
+3. ✅ Verify token saved in localStorage (F12 → Application → Local Storage)
+4. ✅ Check redirect to appropriate dashboard
+5. ✅ Test navigation between pages
+6. ✅ Test CRUD operations (Create, Read, Update, Delete)
+7. ✅ Test user approval functionality
+8. ✅ Test logout & verify token cleared
 
-# Open browser
-# http://localhost:3000
-```
+#### Test Cases
+
+**Authentication:**
+- [ ] Login with valid credentials
+- [ ] Login with invalid credentials
+- [ ] Register new user
+- [ ] Google OAuth login
+- [ ] Logout
+
+**Authorization:**
+- [ ] Super Admin can access all routes
+- [ ] Admin can access admin routes only
+- [ ] User can access user routes only
+- [ ] Unauthorized access redirects properly
+
+**User Management:**
+- [ ] Create new user
+- [ ] Edit user information
+- [ ] Delete user
+- [ ] Approve pending user
+- [ ] View user list
 
 ---
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-### Backend Issues
+### Common Backend Issues
 
-#### Issue: "Call to undefined function base64_encode()"
+<details>
+<summary><b>❌ CORS Error</b></summary>
+
+**Problem:** Frontend can't access backend API
+
 **Solution:**
 ```bash
-# Edit php.ini, uncomment:
-extension=openssl
-extension=mbstring
+# Check config/cors.php
+# Verify FRONTEND_URL in .env
 
-# Restart PHP
+php artisan config:clear
+php artisan cache:clear
+php artisan serve
 ```
 
-#### Issue: "SQLSTATE[HY000] [2002] Connection refused"
+**Verify:** `'allowed_origins' => [env('FRONTEND_URL')]`
+
+</details>
+
+<details>
+<summary><b>❌ Database Connection Failed</b></summary>
+
+**Problem:** Can't connect to MySQL
+
 **Solution:**
 ```bash
-# Start MySQL
-# Windows
+# Verify MySQL is running
+# Windows:
 net start MySQL80
 
-# macOS
+# macOS:
 brew services start mysql
 
-# Linux
+# Linux:
 sudo systemctl start mysql
+
+# Check .env credentials
+DB_DATABASE=backend_login_b4t
+DB_USERNAME=root
+DB_PASSWORD=your_password
 ```
 
-#### Issue: "No application key"
+</details>
+
+<details>
+<summary><b>❌ No Application Key</b></summary>
+
+**Problem:** "No application encryption key has been specified"
+
 **Solution:**
 ```bash
 php artisan key:generate
-```
-
-#### Issue: CORS Error
-**Solution:**
-Check `config/cors.php`:
-```php
-'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
-```
-
-Then:
-```bash
-php artisan cache:clear
 php artisan config:clear
 ```
 
+</details>
+
+<details>
+<summary><b>❌ Sanctum Token Not Working</b></summary>
+
+**Problem:** "Unauthenticated" error on protected routes
+
+**Solution:**
+1. Check token is sent in header: `Authorization: Bearer {token}`
+2. Verify Sanctum middleware in `app/Http/Kernel.php`
+3. Clear config cache:
+```bash
+php artisan config:clear
+php artisan route:clear
+```
+
+</details>
+
 ---
 
-### Frontend Issues
+### Common Frontend Issues
 
-#### Issue: "Module not found"
+<details>
+<summary><b>❌ Module Not Found</b></summary>
+
+**Problem:** Missing dependencies
+
 **Solution:**
 ```bash
-# Clear cache
+# Clear and reinstall
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-#### Issue: Environment variable undefined
-**Solution:**
-1. Ensure `.env.local` exists
-2. Variables start with `NEXT_PUBLIC_`
-3. Restart dev server
+</details>
 
-#### Issue: API connection failed
+<details>
+<summary><b>❌ Environment Variable Undefined</b></summary>
+
+**Problem:** `process.env.NEXT_PUBLIC_API_URL` is undefined
+
 **Solution:**
-1. Check backend is running
-2. Verify `NEXT_PUBLIC_API_URL` in `.env.local`
-3. Check CORS configuration in backend
+1. Check `.env.local` exists
+2. Verify variable starts with `NEXT_PUBLIC_`
+3. Restart dev server:
+```bash
+npm run dev
+```
+
+</details>
+
+<details>
+<summary><b>❌ API Connection Failed</b></summary>
+
+**Problem:** Frontend can't connect to backend
+
+**Solution:**
+1. ✅ Verify backend is running: `http://localhost:8000`
+2. ✅ Check `NEXT_PUBLIC_API_URL` in `.env.local`
+3. ✅ Verify CORS configuration in backend
+4. ✅ Check network tab in browser DevTools (F12)
+
+</details>
+
+<details>
+<summary><b>❌ Token Not Persisting</b></summary>
+
+**Problem:** User logged out after refresh
+
+**Solution:**
+1. Check localStorage is saving token
+2. Verify AuthContext is loading token on mount
+3. Check browser doesn't block localStorage
+4. Test in incognito mode (disable extensions)
+
+</details>
 
 ---
 
-## Resources
+## 📖 Resources
 
-### Backend
+### Documentation
+
+**Backend:**
 - [Laravel 8 Documentation](https://laravel.com/docs/8.x)
 - [Laravel Sanctum](https://laravel.com/docs/8.x/sanctum)
 - [Laravel Socialite](https://laravel.com/docs/8.x/socialite)
+- [PHP Documentation](https://www.php.net/docs.php)
 
-### Frontend
+**Frontend:**
 - [Next.js 16 Documentation](https://nextjs.org/docs)
 - [React 19 Documentation](https://react.dev)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Tailwind CSS](https://tailwindcss.com/docs)
 - [shadcn/ui](https://ui.shadcn.com)
 - [React Hook Form](https://react-hook-form.com)
-- [Zod Documentation](https://zod.dev)
-- [Tailwind CSS](https://tailwindcss.com)
-
-### Tools
-- [Postman](https://www.postman.com)
-- [Thunder Client](https://www.thunderclient.com)
-
----
-
-## 📝 Common Commands
-
-### Backend
-```bash
-# Start server
-php artisan serve
-
-# Database
-php artisan migrate
-php artisan migrate:fresh --seed
-php artisan db:seed --class=SuperAdminSeeder
-
-# Cache
-php artisan cache:clear
-php artisan config:clear
-php artisan view:clear
-
-# Tinker (interactive shell)
-php artisan tinker
->>> App\Models\User::count()
-```
-
-### Frontend
-```bash
-# Development
-npm run dev
-
-# Build
-npm run build
-npm run start
-
-# Lint
-npm run lint
-```
-
----
-
-
-## 📞 Support
-
-**Jika ada masalah:**
-
-1. Check logs:
-   - Backend: `storage/logs/laravel.log`
-   - Frontend: Browser console
-2. Verify .env configuration
-3. Check database connection
-4. Clear all caches
-5. Restart both servers
-
----
-
-**Last Updated:** December 31, 2025  
-**Version:** 1.0.0  
-**Repository:** https://github.com/CMGcool/backend_login_b4t
+- [Zod Documentation](https://z
