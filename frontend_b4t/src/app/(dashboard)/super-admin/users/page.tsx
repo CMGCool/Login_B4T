@@ -39,6 +39,7 @@ export default function SuperAdminUsersPage() {
   // modal add user
   const [openAdd, setOpenAdd] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     username: "",
@@ -65,6 +66,12 @@ export default function SuperAdminUsersPage() {
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleting, setDeleting] = useState<User | null>(null);
 
+  // ✅ modal approve user
+  const [openApprove, setOpenApprove] = useState(false);
+  const [approveSaving, setApproveSaving] = useState(false);
+  const [approving, setApproving] = useState<User | null>(null);
+
+  // ✅ FILTER SEARCH (tetap)
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return items;
@@ -92,12 +99,19 @@ export default function SuperAdminUsersPage() {
     );
   }
 
+  // ✅ LOAD USERS dari backend, tapi hanya role user
   async function load() {
     setLoading(true);
     setErr(null);
     try {
       const data = await getSuperAdminUsers();
-      setItems(data);
+
+      // ✅ TAMBAHAN: hanya tampilkan role user
+      const onlyUsers = (Array.isArray(data) ? data : []).filter(
+        (u: any) => String(u?.role ?? "").toLowerCase() === "user"
+      );
+
+      setItems(onlyUsers);
     } catch (e: any) {
       const msg = getApiErrorMessage(e) ?? "Gagal memuat users";
       setErr(msg);
@@ -112,6 +126,7 @@ export default function SuperAdminUsersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ approve eksekusi (dipakai oleh modal confirm)
   async function onApprove(id: number) {
     try {
       await approveUser(id);
@@ -135,6 +150,7 @@ export default function SuperAdminUsersPage() {
         "super_admin"
       );
       setOpenAdd(false);
+      setShowPassword(false);
       setForm({ name: "", username: "", email: "", password: "" });
       await load();
       showNotice({ type: "success", message: "User berhasil dibuat." });
@@ -229,6 +245,27 @@ export default function SuperAdminUsersPage() {
       if (e?.response?.status === 401) router.replace("/auth/Signin");
     } finally {
       setDeleteSaving(false);
+    }
+  }
+
+  // ✅ open approve modal
+  function openApproveModal(u: User) {
+    setApproving(u);
+    setOpenApprove(true);
+  }
+
+  // ✅ execute approve dari modal confirm
+  async function onApproveConfirm() {
+    if (!approving) return;
+
+    try {
+      setApproveSaving(true);
+      await onApprove(approving.id);
+
+      setOpenApprove(false);
+      setApproving(null);
+    } finally {
+      setApproveSaving(false);
     }
   }
 
@@ -339,7 +376,7 @@ export default function SuperAdminUsersPage() {
                     </tr>
                   ) : (
                     filtered.map((u) => {
-                      const isOk = approved(u.is_approved);
+                      const isOk = approved((u as any).is_approved);
                       return (
                         <tr key={u.id} className="border-b last:border-b-0">
                           <td className="py-3 pr-3">{`RQ${String(u.id).padStart(
@@ -373,7 +410,6 @@ export default function SuperAdminUsersPage() {
                                 <Pencil className="h-4 w-4" />
                               </button>
 
-                              {/* ✅ DELETE: buka modal */}
                               <button
                                 type="button"
                                 className="h-7 w-7 rounded-md bg-red-600 hover:bg-red-700 text-white flex items-center justify-center"
@@ -383,7 +419,6 @@ export default function SuperAdminUsersPage() {
                                 <Trash2 className="h-4 w-4" />
                               </button>
 
-                              {/* ✅ APPROVE ICON: kalau sudah approve jadi abu muda (seperti gambar kamu) */}
                               <button
                                 type="button"
                                 disabled={isOk}
@@ -394,7 +429,7 @@ export default function SuperAdminUsersPage() {
                                     : "bg-green-600 hover:bg-green-700 text-white",
                                 ].join(" ")}
                                 title={isOk ? "Sudah approved" : "Approve"}
-                                onClick={() => onApprove(u.id)}
+                                onClick={() => openApproveModal(u)}
                               >
                                 <Check className="h-4 w-4" />
                               </button>
@@ -413,85 +448,126 @@ export default function SuperAdminUsersPage() {
 
       {/* Modal Add User */}
       {openAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Add User</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-[560px] rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between px-6 pt-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Add user</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Fill in the details below to create a new user account.
+                </p>
+              </div>
+
               <button
-                onClick={() => setOpenAdd(false)}
-                className="text-gray-400 hover:text-gray-700"
+                onClick={() => {
+                  setOpenAdd(false);
+                  setShowPassword(false);
+                  setForm({ name: "", username: "", email: "", password: "" });
+                }}
+                className="rounded-md p-1 text-gray-400 hover:text-gray-700"
+                aria-label="Close"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="px-6 pb-6 pt-4 space-y-4">
               <div>
-                <label className="text-sm text-gray-700">Name</label>
+                <label className="text-sm font-medium text-gray-900">
+                  Name <span className="text-red-500">*</span>
+                </label>
                 <Input
                   value={form.name}
                   onChange={(e) =>
                     setForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  className="h-10 mt-1"
-                  placeholder="Nama"
+                  className="h-10 mt-2"
+                  placeholder="Name"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Username</label>
+                <label className="text-sm font-medium text-gray-900">
+                  Username <span className="text-red-500">*</span>
+                </label>
                 <Input
                   value={form.username}
                   onChange={(e) =>
                     setForm((s) => ({ ...s, username: e.target.value }))
                   }
-                  className="h-10 mt-1"
+                  className="h-10 mt-2"
                   placeholder="Username"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Email (optional)</label>
+                <label className="text-sm font-medium text-gray-900">
+                  Email (optional)
+                </label>
                 <Input
                   value={form.email}
                   onChange={(e) =>
                     setForm((s) => ({ ...s, email: e.target.value }))
                   }
-                  className="h-10 mt-1"
+                  className="h-10 mt-2"
                   placeholder="Email"
                   type="email"
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-700">Password</label>
-                <Input
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, password: e.target.value }))
-                  }
-                  className="h-10 mt-1"
-                  placeholder="Password"
-                  type="password"
-                />
-              </div>
-            </div>
+                <label className="text-sm font-medium text-gray-900">
+                  Password <span className="text-red-500">*</span>
+                </label>
 
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                className="h-10"
-                onClick={() => setOpenAdd(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="h-10 bg-blue-600 hover:bg-blue-700"
-                disabled={saving}
-                onClick={onCreate}
-              >
-                {saving ? "Saving..." : "Create"}
-              </Button>
+                <div className="relative mt-2">
+                  <Input
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, password: e.target.value }))
+                    }
+                    className="h-10 pr-10"
+                    placeholder="Password"
+                    type={showPassword ? "text" : "password"}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:text-gray-700"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <Button
+                  variant="outline"
+                  className="h-10 w-[140px]"
+                  onClick={() => {
+                    setOpenAdd(false);
+                    setShowPassword(false);
+                    setForm({ name: "", username: "", email: "", password: "" });
+                  }}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  className="h-10 w-[140px] bg-blue-600 hover:bg-blue-700"
+                  onClick={onCreate}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Create"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -688,6 +764,75 @@ export default function SuperAdminUsersPage() {
                 disabled={deleteSaving}
               >
                 {deleteSaving ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Modal Approve User (sesuai desain) */}
+      {openApprove && approving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between px-6 pt-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center">
+                  <Check className="h-5 w-5 text-green-600" />
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Approve User
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Are you sure you want to approve this user? They will be
+                    granted access to the system.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setOpenApprove(false);
+                  setApproving(null);
+                }}
+                className="rounded-md p-1 text-gray-400 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 pt-4">
+              <div className="rounded-xl bg-gray-50 px-4 py-3">
+                <div className="text-sm font-semibold text-gray-900">
+                  {approving.name}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {approving.email || "-"}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                className="h-10 w-[140px]"
+                onClick={() => {
+                  setOpenApprove(false);
+                  setApproving(null);
+                }}
+                disabled={approveSaving}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                className="h-10 w-[140px] bg-green-600 hover:bg-green-700"
+                onClick={onApproveConfirm}
+                disabled={approveSaving}
+              >
+                {approveSaving ? "Approving..." : "Confirm"}
               </Button>
             </div>
           </div>

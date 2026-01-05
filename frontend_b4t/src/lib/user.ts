@@ -36,6 +36,10 @@ export type CreateUserPayload = {
   username: string; // ✅ WAJIB sesuai backend
   email?: string; // ✅ optional sesuai backend
   password: string;
+
+  // ✅ tambahan agar bisa pending saat dibuat oleh admin/super admin
+  // (kalau backend mengabaikan field ini, status tetap mengikuti backend)
+  is_approved?: boolean | number;
 };
 
 export async function createUser(
@@ -45,7 +49,8 @@ export async function createUser(
   const endpoint =
     role === "super_admin" ? "/super-admin/create-user" : "/admin/create-user";
 
-  const res = await api.post(endpoint, payload);
+  // ✅ pastikan default pending (tanpa ubah backend)
+  const res = await api.post(endpoint, { ...payload, is_approved: false });
   return res.data;
 }
 
