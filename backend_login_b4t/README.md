@@ -44,8 +44,14 @@ php artisan serve
 ```
 
 Default credentials:
+Super Admin
 - Username: `superadmin`
 - Password: `password123`
+
+Admin
+- Username: `admin1`
+- Password: `password123`
+
 
 ---
 
@@ -147,12 +153,18 @@ Tables yang dibuat:
 ### Step 7: Seed Super Admin
 ```bash
 php artisan db:seed --class=SuperAdminSeeder
+php artisan db:seed --class=AdminSeeder
 ```
 
 Credentials:
 - Username: `superadmin`
 - Password: `password123`
 - Role: `super_admin`
+
+Credentials:
+- Username: `admin1`
+- Password: `password123`
+- Role: `admin`
 
 ### Step 8: Start Server
 ```bash
