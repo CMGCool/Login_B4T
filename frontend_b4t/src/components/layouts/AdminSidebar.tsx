@@ -26,7 +26,11 @@ export default function AdminSidebar() {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const [me, setMe] = useState<MeResponse>({ name: null, email: null, role: null });
+  const [me, setMe] = useState<MeResponse>({
+    name: null,
+    email: null,
+    role: null,
+  });
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -80,7 +84,18 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="min-h-screen bg-white px-6 py-6 flex flex-col border-r border-gray-100">
+    <aside
+      className={[
+        // ✅ bikin sidebar "nempel" dan tidak ikut scroll konten
+        "fixed left-0 top-0 z-40",
+        // ukuran sidebar (samakan dengan layout konten kamu)
+        "w-[260px]",
+        // tinggi full layar + scroll internal kalau kontennya kepanjangan
+        "h-screen overflow-y-auto",
+        // style existing
+        "bg-white px-6 py-6 flex flex-col border-r border-gray-100",
+      ].join(" ")}
+    >
       {/* Logo */}
       <div className="text-xl font-semibold text-gray-900 mb-8">B4T</div>
 
@@ -130,7 +145,9 @@ export default function AdminSidebar() {
             <p className="text-sm font-medium text-gray-900 truncate">
               {me.name || "Account"}
             </p>
-            <p className="text-xs text-gray-500 truncate">{roleLabel(me.role)}</p>
+            <p className="text-xs text-gray-500 truncate">
+              {roleLabel(me.role)}
+            </p>
             <p className="text-xs text-gray-500 truncate">{me.email || "-"}</p>
           </div>
         </div>

@@ -45,7 +45,8 @@ export default function UserSidebar() {
   }, [API_BASE_URL, token]);
 
   // active state (USER)
-  const isDashboard = pathname.startsWith("/user/dashboard");
+  const isDashboard =
+    pathname.startsWith("/user/dashboard") || pathname.startsWith("/user/welcome");
 
   const itemClass = (active: boolean) =>
     [
@@ -58,17 +59,44 @@ export default function UserSidebar() {
   useEffect(() => {
     const fetchMe = async () => {
       if (!token) return;
+
+      // ✅ kalau sebelumnya sudah ada profile tersimpan, tampilkan dulu biar ga "Unknown" saat loading
       try {
-        const res = await axiosAuth.get("/api/me");
-        setMe({
-          name: res.data?.name ?? null,
-          email: res.data?.email ?? null,
-          role: res.data?.role ?? null,
-        });
+        const cached = localStorage.getItem("profile");
+        if (cached) {
+          const p = JSON.parse(cached);
+          setMe({
+            name: p?.name ?? null,
+            email: p?.email ?? null,
+            role: p?.role ?? null,
+          });
+        }
+      } catch {
+        // ignore
+      }
+
+      try {
+        // ✅ FIX: endpoint yang ADA di backend
+        const res = await axiosAuth.get("/api/user/welcome");
+
+        // ✅ tahan banting: dukung banyak bentuk response
+        const data = res.data?.user ?? res.data?.data ?? res.data ?? {};
+
+        const nextMe: MeResponse = {
+          name: data?.name ?? data?.full_name ?? data?.username ?? null,
+          email: data?.email ?? data?.user_email ?? null,
+          role: data?.role ?? "user",
+        };
+
+        setMe(nextMe);
+
+        // ✅ simpan untuk dipakai di halaman lain / refresh
+        localStorage.setItem("profile", JSON.stringify(nextMe));
       } catch {
         // ignore (fallback aman)
       }
     };
+
     fetchMe();
   }, [axiosAuth, token]);
 
@@ -79,6 +107,7 @@ export default function UserSidebar() {
       // ignore
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("profile");
       router.replace("/auth/Signin");
     }
   };
@@ -111,13 +140,13 @@ export default function UserSidebar() {
 
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {me.name || "Account"}
+              {me.name || me.email || "Account"}
             </p>
             <p className="text-xs text-gray-500 truncate">{roleLabel(me.role)}</p>
             <p className="text-xs text-gray-500 truncate">{me.email || "-"}</p>
           </div>
         </div>
-
+        
         {/* Logout merah */}
         <button
           type="button"

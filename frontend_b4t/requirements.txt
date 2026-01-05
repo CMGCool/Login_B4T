@@ -1,0 +1,16 @@
+# Frontend B4T - Requirements / Install helper
+
+# System requirements
+# - Node.js: 18.x atau 20.x (direkomendasikan)
+# - npm: 9+ (atau gunakan pnpm / yarn)
+# - OS: Windows / macOS / Linux
+
+# Install runtime dependencies (single command)
+npm install next@16.1.1 react@19.2.3 react-dom@19.2.3 axios@1.13.2 class-variance-authority@0.7.1 clsx@2.1.1 lucide-react@0.562.0 @hookform/resolvers@5.2.2 react-hook-form@7.69.0 react-icons@5.5.0 tailwind-merge@3.4.0 zod@4.2.1 @radix-ui/react-label@2.1.8 @radix-ui/react-slot@1.2.4
+
+# Install dev dependencies
+npm install -D typescript@^5 @types/node@^20 @types/react@^19 @types/react-dom@^19 eslint@^9 eslint-config-next@16.1.1 tailwindcss@^4 @tailwindcss/postcss@^4 babel-plugin-react-compiler@1.0.0 tw-animate-css@^1.4.0
+
+# Notes
+# - Alternatif: jalankan `npm install` untuk menginstal semua paket sesuai package.json
+# - Jangan commit file yang berisi kredensial (gunakan .env.local untuk variabel lingkungan)

@@ -60,20 +60,25 @@ export default function SuperAdminDashboardPage() {
 
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-        // 1) ambil stats (total admin & total user)
+        // ✅ 1) ambil stats (endpoint DISAMAKAN dengan routes/api.php)
+        // routes kamu: GET /api/super-admin/dashboard-stats
         const res = await axios.get(
-          `${API_BASE_URL}/api/super-admin/dashboard/stats`,
+          `${API_BASE_URL}/api/super-admin/dashboard-stats`,
           { headers }
         );
 
-        const total_admin = Number(res.data?.total_admin ?? 0);
-        const total_user = Number(res.data?.total_user ?? 0);
+        // ✅ tahan banting jika backend mengembalikan {data:{...}} atau langsung {...}
+        const statsData = res.data?.data ?? res.data ?? {};
 
-        // 2) ambil list users untuk hitung pending approval
-        // NOTE: ini sesuai API yang kamu punya: GET /api/super-admin/users
-        const resUsers = await axios.get(`${API_BASE_URL}/api/super-admin/users`, {
-          headers,
-        });
+        const total_admin = Number(statsData?.total_admin ?? 0);
+        const total_user = Number(statsData?.total_user ?? 0);
+
+        // ✅ 2) ambil list users untuk hitung pending approval
+        // sesuai routes: GET /api/super-admin/users
+        const resUsers = await axios.get(
+          `${API_BASE_URL}/api/super-admin/users`,
+          { headers }
+        );
 
         const raw: BackendUser[] = Array.isArray(resUsers.data)
           ? resUsers.data
@@ -81,10 +86,11 @@ export default function SuperAdminDashboardPage() {
           ? resUsers.data.data
           : [];
 
-        // hanya role=user
-        const onlyUsers = raw.filter(
-          (u) => String(u.role ?? "").toLowerCase() === "user" || !u.role
-        );
+        // hanya role=user (kalau backend ga kirim role, tetap dihitung)
+        const onlyUsers = raw.filter((u) => {
+          const r = String(u.role ?? "").toLowerCase();
+          return r === "user" || r === ""; // "" artinya field role tidak ada
+        });
 
         const pending_approval = onlyUsers.filter((u) => !mapApproved(u)).length;
 
