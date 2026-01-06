@@ -1,25 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function SSOCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const role = searchParams.get("role");
+    // baca query params dari browser URL untuk menghindari error saat rendering di server
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const token = params?.get("token");
+    const role = params?.get("role");
 
     if (!token) {
       router.replace("/auth/Signin");
       return;
     }
 
-    // simpan token agar halaman dashboard kamu bisa akses /api/me
     localStorage.setItem("token", token);
 
-    // arahkan ke halaman dashboard yang SUDAH KAMU PUNYA
     if (role === "super_admin") {
       router.replace("/super-admin/dashboard");
     } else if (role === "admin") {
@@ -27,7 +26,7 @@ export default function SSOCallbackPage() {
     } else {
       router.replace("/user/welcome");
     }
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
