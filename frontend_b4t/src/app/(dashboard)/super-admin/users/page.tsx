@@ -8,7 +8,7 @@ import {
   createUser,
   getSuperAdminUsers,
   updateUser,
-  deleteUser, // ✅ DELETE
+  deleteUser,
   type User,
 } from "@/lib/user";
 
@@ -20,8 +20,6 @@ function approved(v: any) {
   return v === true || v === 1 || v === "1";
 }
 
-const MASK_PASSWORD = "••••••••";
-
 type Notice = { type: "success" | "error"; message: string } | null;
 
 export default function SuperAdminUsersPage() {
@@ -31,9 +29,7 @@ export default function SuperAdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // ✅ POP UP (toast)
   const [notice, setNotice] = useState<Notice>(null);
-
   const [q, setQ] = useState("");
 
   // modal add user
@@ -52,36 +48,34 @@ export default function SuperAdminUsersPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [passwordChanged, setPasswordChanged] = useState(false);
 
+  // ✅ password edit dibuat kosong (optional)
   const [editForm, setEditForm] = useState({
     name: "",
     username: "",
     email: "",
-    password: MASK_PASSWORD,
+    password: "",
   });
 
-  // ✅ modal delete user
+  // modal delete user
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleting, setDeleting] = useState<User | null>(null);
 
-  // ✅ modal approve user
+  // modal approve user
   const [openApprove, setOpenApprove] = useState(false);
   const [approveSaving, setApproveSaving] = useState(false);
   const [approving, setApproving] = useState<User | null>(null);
 
-  // ✅ FILTER SEARCH (tetap)
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return items;
-    return items.filter((u) => {
-      return (
+    return items.filter(
+      (u) =>
         String(u.name ?? "").toLowerCase().includes(s) ||
         String(u.username ?? "").toLowerCase().includes(s) ||
         String(u.email ?? "").toLowerCase().includes(s)
-      );
-    });
+    );
   }, [items, q]);
 
   function showNotice(n: Notice) {
@@ -99,22 +93,18 @@ export default function SuperAdminUsersPage() {
     );
   }
 
-  // ✅ LOAD USERS dari backend, tapi hanya role user
   async function load() {
     setLoading(true);
     setErr(null);
     try {
       const data = await getSuperAdminUsers();
-
-      // ✅ TAMBAHAN: hanya tampilkan role user
-      const onlyUsers = (Array.isArray(data) ? data : []).filter(
-        (u: any) => String(u?.role ?? "").toLowerCase() === "user"
+      setItems(
+        (Array.isArray(data) ? data : []).filter(
+          (u: any) => String(u?.role ?? "").toLowerCase() === "user"
+        )
       );
-
-      setItems(onlyUsers);
     } catch (e: any) {
-      const msg = getApiErrorMessage(e) ?? "Gagal memuat users";
-      setErr(msg);
+      setErr(getApiErrorMessage(e));
       if (e?.response?.status === 401) router.replace("/auth/Signin");
     } finally {
       setLoading(false);
@@ -123,10 +113,8 @@ export default function SuperAdminUsersPage() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ approve eksekusi (dipakai oleh modal confirm)
   async function onApprove(id: number) {
     try {
       await approveUser(id);
@@ -140,6 +128,15 @@ export default function SuperAdminUsersPage() {
   async function onCreate() {
     try {
       setSaving(true);
+
+      if (!form.name.trim() || !form.username.trim() || !form.password) {
+        showNotice({
+          type: "error",
+          message: "Name, Username, dan Password wajib diisi.",
+        });
+        return;
+      }
+
       await createUser(
         {
           name: form.name.trim(),
@@ -149,9 +146,11 @@ export default function SuperAdminUsersPage() {
         },
         "super_admin"
       );
+
       setOpenAdd(false);
       setShowPassword(false);
       setForm({ name: "", username: "", email: "", password: "" });
+
       await load();
       showNotice({ type: "success", message: "User berhasil dibuat." });
     } catch (e: any) {
@@ -163,7 +162,6 @@ export default function SuperAdminUsersPage() {
 
   function openEditModal(u: User) {
     setEditing(u);
-    setPasswordChanged(false);
     setShowEditPassword(false);
     setOpenEdit(true);
   }
@@ -171,12 +169,11 @@ export default function SuperAdminUsersPage() {
   // auto isi data saat modal edit dibuka
   useEffect(() => {
     if (!openEdit || !editing) return;
-
     setEditForm({
       name: String(editing.name ?? ""),
       username: String(editing.username ?? ""),
       email: String(editing.email ?? ""),
-      password: MASK_PASSWORD,
+      password: "", // ✅ kosongkan (optional)
     });
   }, [openEdit, editing]);
 
@@ -197,17 +194,14 @@ export default function SuperAdminUsersPage() {
         email: editForm.email?.trim() || undefined,
       };
 
-      if (
-        passwordChanged &&
-        editForm.password.trim() &&
-        editForm.password !== MASK_PASSWORD
-      ) {
+      // ✅ kirim password hanya jika diisi (optional)
+      if (editForm.password.trim()) {
         payload.password = editForm.password.trim();
       }
 
       await updateUser(editing.id, payload);
-
       await load();
+
       setOpenEdit(false);
       setEditing(null);
 
@@ -220,20 +214,17 @@ export default function SuperAdminUsersPage() {
     }
   }
 
-  // ✅ open delete modal
   function openDeleteModal(u: User) {
     setDeleting(u);
     setOpenDelete(true);
   }
 
-  // ✅ execute delete
   async function onDelete() {
     if (!deleting) return;
 
     try {
       setDeleteSaving(true);
       await deleteUser(deleting.id);
-
       await load();
 
       setOpenDelete(false);
@@ -248,20 +239,16 @@ export default function SuperAdminUsersPage() {
     }
   }
 
-  // ✅ open approve modal
   function openApproveModal(u: User) {
     setApproving(u);
     setOpenApprove(true);
   }
 
-  // ✅ execute approve dari modal confirm
   async function onApproveConfirm() {
     if (!approving) return;
-
     try {
       setApproveSaving(true);
       await onApprove(approving.id);
-
       setOpenApprove(false);
       setApproving(null);
     } finally {
@@ -271,36 +258,39 @@ export default function SuperAdminUsersPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* ✅ POP UP NOTIFICATION */}
+      {/* ✅ TOAST / POPUP (gaya sama seperti Admin) */}
       {notice && (
-        <div className="fixed right-6 top-6 z-[9999] w-[360px]">
+        <div className="fixed top-4 right-4 z-[9999] space-y-2">
           <div
-            className={[
-              "rounded-xl border shadow-lg p-4 flex items-start gap-3 bg-white",
-              notice.type === "success"
-                ? "border-green-200"
-                : "border-red-200",
-            ].join(" ")}
+            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${
+              notice.type === "success" ? "border-green-200" : "border-red-200"
+            }`}
           >
-            <div className="flex-1">
-              <div
-                className={[
-                  "text-sm font-semibold",
-                  notice.type === "success" ? "text-green-700" : "text-red-700",
-                ].join(" ")}
-              >
-                {notice.type === "success" ? "Berhasil" : "Gagal"}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                    notice.type === "success" ? "bg-green-500" : "bg-red-500"
+                  }`}
+                />
+                <p
+                  className={`text-sm font-medium ${
+                    notice.type === "success" ? "text-green-700" : "text-red-700"
+                  }`}
+                >
+                  {notice.message}
+                </p>
               </div>
-              <div className="mt-1 text-sm text-gray-600">{notice.message}</div>
-            </div>
 
-            <button
-              onClick={() => setNotice(null)}
-              className="rounded-md p-1 text-gray-400 hover:text-gray-700"
-              aria-label="Close notification"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="text-gray-400 hover:text-gray-700"
+                aria-label="Close notification"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -340,6 +330,7 @@ export default function SuperAdminUsersPage() {
             <div className="text-sm font-semibold text-gray-900">List User</div>
 
             <Button
+              type="button"
               onClick={() => setOpenAdd(true)}
               className="h-9 rounded-lg bg-blue-600 hover:bg-blue-700"
             >
@@ -371,7 +362,7 @@ export default function SuperAdminUsersPage() {
                   ) : filtered.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-gray-500">
-                        Tidak ada data
+                        Data not found
                       </td>
                     </tr>
                   ) : (
@@ -459,6 +450,7 @@ export default function SuperAdminUsersPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   setOpenAdd(false);
                   setShowPassword(false);
@@ -548,6 +540,7 @@ export default function SuperAdminUsersPage() {
 
               <div className="pt-2 flex items-center justify-end gap-3">
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-10 w-[140px]"
                   onClick={() => {
@@ -561,6 +554,7 @@ export default function SuperAdminUsersPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   className="h-10 w-[140px] bg-blue-600 hover:bg-blue-700"
                   onClick={onCreate}
                   disabled={saving}
@@ -586,6 +580,7 @@ export default function SuperAdminUsersPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   setOpenEdit(false);
                   setEditing(null);
@@ -643,18 +638,17 @@ export default function SuperAdminUsersPage() {
 
               <div>
                 <label className="text-sm font-medium text-gray-900">
-                  Password <span className="text-red-500">*</span>
+                  Password <span className="text-gray-400">(optional)</span>
                 </label>
 
                 <div className="relative mt-2">
                   <Input
                     value={editForm.password}
-                    onChange={(e) => {
-                      setPasswordChanged(true);
-                      setEditForm((s) => ({ ...s, password: e.target.value }));
-                    }}
+                    onChange={(e) =>
+                      setEditForm((s) => ({ ...s, password: e.target.value }))
+                    }
                     className="h-10 pr-10"
-                    placeholder="Password"
+                    placeholder="Isi jika ingin ganti password"
                     type={showEditPassword ? "text" : "password"}
                   />
 
@@ -677,6 +671,7 @@ export default function SuperAdminUsersPage() {
 
               <div className="pt-2 flex items-center justify-end gap-3">
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-10 w-[140px]"
                   onClick={() => {
@@ -689,6 +684,7 @@ export default function SuperAdminUsersPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   className="h-10 w-[140px] bg-blue-600 hover:bg-blue-700"
                   onClick={onUpdate}
                   disabled={editSaving}
@@ -701,7 +697,7 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {/* ✅ Modal Delete User (sesuai desain) */}
+      {/* Modal Delete User */}
       {openDelete && deleting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl">
@@ -723,6 +719,7 @@ export default function SuperAdminUsersPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   setOpenDelete(false);
                   setDeleting(null);
@@ -747,6 +744,7 @@ export default function SuperAdminUsersPage() {
 
             <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
               <Button
+                type="button"
                 variant="outline"
                 className="h-10 w-[140px]"
                 onClick={() => {
@@ -759,6 +757,7 @@ export default function SuperAdminUsersPage() {
               </Button>
 
               <Button
+                type="button"
                 className="h-10 w-[140px] bg-red-600 hover:bg-red-700"
                 onClick={onDelete}
                 disabled={deleteSaving}
@@ -770,7 +769,7 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {/* ✅ Modal Approve User (sesuai desain) */}
+      {/* Modal Approve User */}
       {openApprove && approving && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl">
@@ -792,6 +791,7 @@ export default function SuperAdminUsersPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   setOpenApprove(false);
                   setApproving(null);
@@ -816,6 +816,7 @@ export default function SuperAdminUsersPage() {
 
             <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
               <Button
+                type="button"
                 variant="outline"
                 className="h-10 w-[140px]"
                 onClick={() => {
@@ -828,6 +829,7 @@ export default function SuperAdminUsersPage() {
               </Button>
 
               <Button
+                type="button"
                 className="h-10 w-[140px] bg-green-600 hover:bg-green-700"
                 onClick={onApproveConfirm}
                 disabled={approveSaving}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Pencil, Trash2, Plus, Eye, EyeOff, X } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, EyeOff, X } from "lucide-react";
 
 type BackendUser = {
   id: number | string;
@@ -20,6 +20,16 @@ type UiAdmin = {
   username: string;
   email: string;
   role: string;
+};
+
+/* =======================
+   ✅ TOAST TYPES
+======================= */
+type ToastType = "success" | "error";
+type ToastItem = {
+  id: number;
+  type: ToastType;
+  message: string;
 };
 
 export default function SuperAdminAdminPage() {
@@ -42,13 +52,38 @@ export default function SuperAdminAdminPage() {
     });
   }, [API_BASE_URL, token]);
 
+  /* =======================
+     ✅ TOAST NOTIFICATION
+  ======================= */
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastIdRef = useRef(1);
+
+  function pushToast(type: ToastType, message: string) {
+    const id = toastIdRef.current++;
+    setToasts((prev) => [{ id, type, message }, ...prev]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }
+
+  function toastSuccess(message: string) {
+    pushToast("success", message);
+  }
+
+  function toastError(message: string) {
+    pushToast("error", message);
+  }
+
+  function dismissToast(id: number) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
+
   const fetchAdmins = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Ambil dari endpoint yang sudah ada
-      // GET /api/super-admin/users (lalu filter role=admin)
       const res = await axiosAuth.get("/api/super-admin/users");
 
       const raw: BackendUser[] = Array.isArray(res.data)
@@ -57,7 +92,6 @@ export default function SuperAdminAdminPage() {
         ? res.data.data
         : [];
 
-      // ✅ FILTER: hanya role admin
       const onlyAdmins = raw.filter(
         (u) => String(u.role ?? "").toLowerCase() === "admin"
       );
@@ -72,11 +106,12 @@ export default function SuperAdminAdminPage() {
 
       setAdmins(mapped);
     } catch (e: any) {
-      setError(
+      const msg =
         e?.response?.data?.message ||
-          e?.message ||
-          "Gagal mengambil data admin dari backend."
-      );
+        e?.message ||
+        "Gagal mengambil data admin dari backend.";
+      setError(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }
@@ -101,25 +136,21 @@ export default function SuperAdminAdminPage() {
     });
   }, [search, admins]);
 
-  // ✅ Tambahan: format ID seperti RQ001 (sesuai gambar)
   const formatId = (id: number | string) => {
     const n = Number(id);
     if (Number.isFinite(n)) return `RQ${String(n).padStart(3, "0")}`;
     return String(id);
   };
 
-  // ✅ Tambahan: handler dummy (tidak mengubah apa-apa)
   function onEditAdmin(u: UiAdmin) {
-    // ✅ tambahan: buka modal edit (bukan alert lagi)
     openEditModal(u);
   }
   function onDeleteAdmin(u: UiAdmin) {
-    // ✅ tambahan: buka modal delete (bukan alert)
     openDeleteModal(u);
   }
 
   /* =========================================================
-     ✅ MODAL ADD ADMIN (sesuai gambar)
+     ✅ MODAL ADD ADMIN
      ========================================================= */
   const [openAdd, setOpenAdd] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -134,16 +165,17 @@ export default function SuperAdminAdminPage() {
 
   function onAddAdmin() {
     setOpenAdd(true);
+    setError(null);
   }
 
   function closeAddModal() {
+    if (saving) return;
     setOpenAdd(false);
     setSaving(false);
     setShowPassword(false);
     setForm({ name: "", username: "", email: "", password: "" });
   }
 
-  // ✅ tambahan helper error message (biar rapi)
   function getApiErrorMessage(e: any) {
     return (
       e?.response?.data?.message ||
@@ -153,39 +185,29 @@ export default function SuperAdminAdminPage() {
     );
   }
 
-  // ✅ tambahan: call backend create admin (TANPA ubah backend)
   async function createAdmin(payload: {
     name: string;
     username: string;
     email: string;
     password: string;
   }) {
-    /**
-     * Endpoint ini mengikuti pola:
-     * SuperAdminController@createAdmin
-     * Biasanya: POST /api/super-admin/create-admin
-     *
-     * Kalau route kamu beda, ganti string endpoint di bawah ini saja.
-     */
     const res = await axiosAuth.post("/api/super-admin/create-admin", payload);
     return res.data;
   }
 
   async function onConfirmAddAdmin() {
-    // ✅ sekarang benar-benar CALL backend
     if (
       !form.name.trim() ||
       !form.username.trim() ||
       !form.email.trim() ||
       !form.password
     ) {
-      alert("Name, Username, Email, dan Password wajib diisi.");
+      toastError("Name, Username, Email, dan Password wajib diisi.");
       return;
     }
 
-    // kalau token tidak ada, stop (biar tidak error aneh)
     if (!token) {
-      alert(
+      toastError(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -193,6 +215,7 @@ export default function SuperAdminAdminPage() {
 
     try {
       setSaving(true);
+      setError(null);
 
       await createAdmin({
         name: form.name.trim(),
@@ -201,17 +224,20 @@ export default function SuperAdminAdminPage() {
         password: form.password,
       });
 
+      toastSuccess("Admin berhasil ditambahkan.");
       closeAddModal();
-      await fetchAdmins(); // refresh list admin setelah berhasil
+      await fetchAdmins();
     } catch (e: any) {
-      alert(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setSaving(false);
     }
   }
 
   /* =========================================================
-     ✅ MODAL EDIT ADMIN (sesuai gambar)
+     ✅ MODAL EDIT ADMIN
      ========================================================= */
   const MASK_PASSWORD = "••••••••";
 
@@ -233,9 +259,11 @@ export default function SuperAdminAdminPage() {
     setPasswordChanged(false);
     setShowEditPassword(false);
     setOpenEdit(true);
+    setError(null);
   }
 
   function closeEditModal() {
+    if (editSaving) return;
     setOpenEdit(false);
     setEditSaving(false);
     setShowEditPassword(false);
@@ -244,7 +272,6 @@ export default function SuperAdminAdminPage() {
     setEditForm({ name: "", username: "", email: "", password: MASK_PASSWORD });
   }
 
-  // auto isi data saat modal edit dibuka
   useEffect(() => {
     if (!openEdit || !editing) return;
 
@@ -256,7 +283,6 @@ export default function SuperAdminAdminPage() {
     });
   }, [openEdit, editing]);
 
-  // ✅ tambahan: call backend update admin (pakai endpoint existing /api/users/{id})
   async function updateAdmin(userId: number | string, payload: any) {
     const res = await axiosAuth.put(`/api/users/${userId}`, payload);
     return res.data;
@@ -270,12 +296,12 @@ export default function SuperAdminAdminPage() {
       !editForm.username.trim() ||
       !editForm.email.trim()
     ) {
-      alert("Name, Username, dan Email wajib diisi.");
+      toastError("Name, Username, dan Email wajib diisi.");
       return;
     }
 
     if (!token) {
-      alert(
+      toastError(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -283,6 +309,7 @@ export default function SuperAdminAdminPage() {
 
     try {
       setEditSaving(true);
+      setError(null);
 
       const payload: any = {
         name: editForm.name.trim(),
@@ -290,7 +317,6 @@ export default function SuperAdminAdminPage() {
         email: editForm.email.trim(),
       };
 
-      // password hanya dikirim kalau user benar-benar mengganti
       if (
         passwordChanged &&
         editForm.password.trim() &&
@@ -301,17 +327,20 @@ export default function SuperAdminAdminPage() {
 
       await updateAdmin(editing.id, payload);
 
+      toastSuccess("Admin berhasil diperbarui.");
       closeEditModal();
-      await fetchAdmins(); // refresh list setelah update
+      await fetchAdmins();
     } catch (e: any) {
-      alert(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setEditSaving(false);
     }
   }
 
   /* =========================================================
-     ✅ MODAL DELETE ADMIN (sesuai gambar) - NEW (tambahan)
+     ✅ MODAL DELETE ADMIN
      ========================================================= */
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
@@ -320,15 +349,16 @@ export default function SuperAdminAdminPage() {
   function openDeleteModal(u: UiAdmin) {
     setDeleting(u);
     setOpenDelete(true);
+    setError(null);
   }
 
   function closeDeleteModal() {
+    if (deleteSaving) return;
     setOpenDelete(false);
     setDeleteSaving(false);
     setDeleting(null);
   }
 
-  // ✅ call backend delete admin (endpoint existing /api/users/{id})
   async function deleteAdmin(userId: number | string) {
     const res = await axiosAuth.delete(`/api/users/${userId}`);
     return res.data;
@@ -338,7 +368,7 @@ export default function SuperAdminAdminPage() {
     if (!deleting) return;
 
     if (!token) {
-      alert(
+      toastError(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -346,13 +376,17 @@ export default function SuperAdminAdminPage() {
 
     try {
       setDeleteSaving(true);
+      setError(null);
 
       await deleteAdmin(deleting.id);
 
+      toastSuccess("Admin berhasil dihapus.");
       closeDeleteModal();
-      await fetchAdmins(); // refresh list setelah delete
+      await fetchAdmins();
     } catch (e: any) {
-      alert(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setDeleteSaving(false);
     }
@@ -360,6 +394,43 @@ export default function SuperAdminAdminPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
+      {/* ===== TOAST (TOP RIGHT) ===== */}
+      <div className="fixed top-4 right-4 z-[9999] space-y-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${
+              t.type === "success" ? "border-green-200" : "border-red-200"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-1 h-2.5 w-2.5 rounded-full ${
+                    t.type === "success" ? "bg-green-500" : "bg-red-500"
+                  }`}
+                />
+                <p
+                  className={`text-sm font-medium ${
+                    t.type === "success" ? "text-green-700" : "text-red-700"
+                  }`}
+                >
+                  {t.message}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => dismissToast(t.id)}
+                className="text-gray-400 hover:text-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Header: Admin + Search */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
         <h1 className="text-2xl font-semibold text-gray-900">Admin</h1>
@@ -377,26 +448,17 @@ export default function SuperAdminAdminPage() {
         </div>
       </div>
 
-      {/* Divider tipis */}
       <div className="mx-6 mt-4 border-b border-gray-200/60" />
-
-      {/* Error */}
-      {error && (
-        <div className="px-6 pt-4">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        </div>
-      )}
 
       {/* Card + Table */}
       <div className="px-6 pt-6">
         <div className="w-full max-w-[980px] rounded-2xl border border-gray-200 bg-white shadow-sm">
-          {/* ✅ Header card + tombol Add Admin */}
           <div className="flex items-center justify-between px-6 pt-5 pb-3">
             <h2 className="text-base font-semibold text-gray-900">List Admin</h2>
 
+            {/* ✅ FIX: tambah type="button" */}
             <Button
+              type="button"
               onClick={onAddAdmin}
               className="h-9 rounded-lg bg-blue-600 hover:bg-blue-700"
             >
@@ -486,12 +548,11 @@ export default function SuperAdminAdminPage() {
       <div className="h-12" />
 
       {/* =========================================================
-          ✅ MODAL ADD ADMIN (sesuai gambar)
+          ✅ MODAL ADD ADMIN
          ========================================================= */}
       {openAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
-            {/* Header */}
             <div className="flex items-start justify-between px-8 pt-7">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Add admin</h2>
@@ -501,6 +562,7 @@ export default function SuperAdminAdminPage() {
               </div>
 
               <button
+                type="button"
                 onClick={closeAddModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
@@ -509,7 +571,6 @@ export default function SuperAdminAdminPage() {
               </button>
             </div>
 
-            {/* Form */}
             <div className="px-8 pb-6 pt-5 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-900">
@@ -574,22 +635,17 @@ export default function SuperAdminAdminPage() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:text-gray-700"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    <EyeOff className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Footer buttons */}
               <div className="pt-3 flex items-center justify-center gap-4">
+                {/* ✅ FIX: tambah type="button" */}
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-10 w-[260px]"
                   onClick={closeAddModal}
@@ -598,7 +654,9 @@ export default function SuperAdminAdminPage() {
                   Cancel
                 </Button>
 
+                {/* ✅ FIX: tambah type="button" */}
                 <Button
+                  type="button"
                   className="h-10 w-[260px] bg-blue-600 hover:bg-blue-700"
                   onClick={onConfirmAddAdmin}
                   disabled={saving}
@@ -612,12 +670,11 @@ export default function SuperAdminAdminPage() {
       )}
 
       {/* =========================================================
-          ✅ MODAL EDIT ADMIN (sesuai gambar)
+          ✅ MODAL EDIT ADMIN
          ========================================================= */}
       {openEdit && editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
-            {/* Header */}
             <div className="flex items-start justify-between px-8 pt-7">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Edit admin</h2>
@@ -627,6 +684,7 @@ export default function SuperAdminAdminPage() {
               </div>
 
               <button
+                type="button"
                 onClick={closeEditModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
@@ -635,7 +693,6 @@ export default function SuperAdminAdminPage() {
               </button>
             </div>
 
-            {/* Form */}
             <div className="px-8 pb-6 pt-5 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-900">
@@ -705,18 +762,15 @@ export default function SuperAdminAdminPage() {
                       showEditPassword ? "Hide password" : "Show password"
                     }
                   >
-                    {showEditPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    <EyeOff className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Footer buttons */}
               <div className="pt-3 flex items-center justify-center gap-4">
+                {/* ✅ FIX: tambah type="button" */}
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-10 w-[260px]"
                   onClick={closeEditModal}
@@ -725,7 +779,9 @@ export default function SuperAdminAdminPage() {
                   Cancel
                 </Button>
 
+                {/* ✅ FIX: tambah type="button" */}
                 <Button
+                  type="button"
                   className="h-10 w-[260px] bg-blue-600 hover:bg-blue-700"
                   onClick={onConfirmEditAdmin}
                   disabled={editSaving}
@@ -739,7 +795,7 @@ export default function SuperAdminAdminPage() {
       )}
 
       {/* =========================================================
-          ✅ MODAL DELETE ADMIN (sesuai gambar) - NEW
+          ✅ MODAL DELETE ADMIN
          ========================================================= */}
       {openDelete && deleting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -762,6 +818,7 @@ export default function SuperAdminAdminPage() {
               </div>
 
               <button
+                type="button"
                 onClick={closeDeleteModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
@@ -782,7 +839,9 @@ export default function SuperAdminAdminPage() {
             </div>
 
             <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
+              {/* ✅ FIX: tambah type="button" */}
               <Button
+                type="button"
                 variant="outline"
                 className="h-10 w-[140px]"
                 onClick={closeDeleteModal}
@@ -791,7 +850,9 @@ export default function SuperAdminAdminPage() {
                 Cancel
               </Button>
 
+              {/* ✅ FIX: tambah type="button" */}
               <Button
+                type="button"
                 className="h-10 w-[140px] bg-red-600 hover:bg-red-700"
                 onClick={onConfirmDeleteAdmin}
                 disabled={deleteSaving}

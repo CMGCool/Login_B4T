@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,19 @@ function approved(v: any) {
   return v === true || v === 1 || v === "1";
 }
 
+/* =========================================================
+   ✅ ADDED: Simple Toast System (Top Right)
+   - Success: Green
+   - Error: Red
+========================================================= */
+type ToastType = "success" | "error";
+
+type ToastItem = {
+  id: number;
+  type: ToastType;
+  message: string;
+};
+
 export default function AdminUsersPage() {
   const router = useRouter();
 
@@ -48,6 +61,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // tetap dipertahankan (biar tidak merusak struktur), tapi notifikasi utama pakai toast
   const [error, setError] = useState<string | null>(null);
 
   const [users, setUsers] = useState<UiUser[]>([]);
@@ -78,6 +92,34 @@ export default function AdminUsersPage() {
     );
   }
 
+  // ✅ ADDED: toast state + helpers
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastIdRef = useRef(1);
+
+  function pushToast(type: ToastType, message: string) {
+    const id = toastIdRef.current++;
+    const item: ToastItem = { id, type, message };
+
+    setToasts((prev) => [item, ...prev]);
+
+    // auto-dismiss
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }
+
+  function toastSuccess(message: string) {
+    pushToast("success", message);
+  }
+
+  function toastError(message: string) {
+    pushToast("error", message);
+  }
+
+  function dismissToast(id: number) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
+
   const mapStatus = (u: BackendUser): "Approve" | "Pending" => {
     if (u.is_approved === true || u.is_approved === 1) return "Approve";
     if (u.is_approved === false || u.is_approved === 0) return "Pending";
@@ -94,7 +136,6 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      // ✅ ADMIN endpoint
       const res = await axiosAuth.get("/api/admin/users");
 
       const raw: BackendUser[] = Array.isArray(res.data)
@@ -126,9 +167,10 @@ export default function AdminUsersPage() {
         return;
       }
 
-      setError(
-        getApiErrorMessage(e) || "Gagal mengambil data users dari backend."
-      );
+      const msg =
+        getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
+      setError(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }
@@ -196,27 +238,29 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      // ✅ approve endpoint (sesuai routes/api.php)
       await axiosAuth.post(`/api/approve-user/${selectedUser.id}`);
 
-      // Update UI langsung
       setUsers((prev) =>
         prev.map((u) =>
           u.id === selectedUser.id ? { ...u, status: "Approve" } : u
         )
       );
 
+      toastSuccess("User approved successfully.");
+
       setIsModalOpen(false);
       setSelectedUser(null);
     } catch (e: any) {
-      setError(getApiErrorMessage(e) || "Gagal approve user. Coba lagi.");
+      const msg = getApiErrorMessage(e) || "Gagal approve user. Coba lagi.";
+      setError(msg);
+      toastError(msg);
     } finally {
       setConfirmLoading(false);
     }
   };
 
   /* =========================================================
-     ✅ ADD USER (via backend /api/register supaya PENDING)
+     ✅ ADD USER (via backend /api/register)
      ========================================================= */
   const [openAdd, setOpenAdd] = useState(false);
   const [savingAdd, setSavingAdd] = useState(false);
@@ -247,14 +291,58 @@ export default function AdminUsersPage() {
     email?: string;
     password: string;
   }) {
-    // ✅ AuthController@register -> is_approved = false (Pending)
     const res = await axiosAuth.post("/api/register", payload);
     return res.data;
   }
 
+  async function approveUserById(userId: number | string) {
+    await axiosAuth.post(`/api/approve-user/${userId}`);
+  }
+
+  async function createUserApproved(payload: {
+    name: string;
+    username: string;
+    email?: string;
+    password: string;
+  }) {
+    const data = await createUserPending(payload);
+
+    const createdId = (data as any)?.id ?? (data as any)?.data?.id ?? null;
+
+    if (createdId != null) {
+      await approveUserById(createdId);
+      return data;
+    }
+
+    const res = await axiosAuth.get("/api/admin/users");
+
+    const raw: BackendUser[] = Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res.data?.data)
+      ? res.data.data
+      : [];
+
+    const match = raw.find((u) => {
+      const un = String(u.username ?? "").toLowerCase();
+      const em = String(u.email ?? "").toLowerCase();
+      return (
+        un === payload.username.toLowerCase() ||
+        (!!payload.email && em === payload.email.toLowerCase())
+      );
+    });
+
+    if (match?.id != null) {
+      await approveUserById(match.id);
+    }
+
+    return data;
+  }
+
   async function onConfirmAddUser() {
     if (!addForm.name.trim() || !addForm.username.trim() || !addForm.password) {
-      setError("Name, Username, dan Password wajib diisi.");
+      const msg = "Name, Username, dan Password wajib diisi.";
+      setError(msg);
+      toastError(msg);
       return;
     }
 
@@ -262,17 +350,21 @@ export default function AdminUsersPage() {
       setSavingAdd(true);
       setError(null);
 
-      await createUserPending({
+      await createUserApproved({
         name: addForm.name.trim(),
         username: addForm.username.trim(),
         email: addForm.email.trim() || undefined,
         password: addForm.password,
       });
 
+      toastSuccess("User added successfully.");
+
       closeAddModal();
-      await fetchUsers(); // refresh list
+      await fetchUsers();
     } catch (e: any) {
-      setError(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setSavingAdd(false);
     }
@@ -333,14 +425,17 @@ export default function AdminUsersPage() {
     if (!editing) return;
 
     if (!editForm.name.trim() || !editForm.username.trim()) {
-      setError("Name dan Username wajib diisi.");
+      const msg = "Name dan Username wajib diisi.";
+      setError(msg);
+      toastError(msg);
       return;
     }
 
     if (!token) {
-      setError(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
+      const msg =
+        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
+      setError(msg);
+      toastError(msg);
       return;
     }
 
@@ -364,10 +459,14 @@ export default function AdminUsersPage() {
 
       await updateUser(editing.id, payload);
 
+      toastSuccess("User updated successfully.");
+
       closeEditModal();
       await fetchUsers();
     } catch (e: any) {
-      setError(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setEditSaving(false);
     }
@@ -402,9 +501,10 @@ export default function AdminUsersPage() {
     if (!deleting) return;
 
     if (!token) {
-      setError(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
+      const msg =
+        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
+      setError(msg);
+      toastError(msg);
       return;
     }
 
@@ -414,10 +514,14 @@ export default function AdminUsersPage() {
 
       await deleteUser(deleting.id);
 
+      toastSuccess("User deleted successfully.");
+
       closeDeleteModal();
       await fetchUsers();
     } catch (e: any) {
-      setError(getApiErrorMessage(e));
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      toastError(msg);
     } finally {
       setDeleteSaving(false);
     }
@@ -425,6 +529,50 @@ export default function AdminUsersPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
+      {/* ✅ ADDED: Toast Container (Top Right) */}
+      <div className="fixed top-4 right-4 z-[9999] space-y-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={[
+              "w-[320px] rounded-xl border px-4 py-3 shadow-lg",
+              "backdrop-blur bg-white/95",
+              t.type === "success"
+                ? "border-green-200"
+                : "border-red-200",
+            ].join(" ")}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={[
+                    "mt-0.5 h-2.5 w-2.5 rounded-full",
+                    t.type === "success" ? "bg-green-500" : "bg-red-500",
+                  ].join(" ")}
+                />
+                <div
+                  className={[
+                    "text-sm font-medium",
+                    t.type === "success" ? "text-green-700" : "text-red-700",
+                  ].join(" ")}
+                >
+                  {t.message}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => dismissToast(t.id)}
+                className="rounded-md p-1 text-gray-400 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Header: Users + Search */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
         <h1 className="text-2xl font-semibold text-gray-900">Users</h1>
@@ -444,18 +592,13 @@ export default function AdminUsersPage() {
 
       <div className="mx-6 mt-4 border-b border-gray-200/60" />
 
-      {/* Error */}
-      {error && (
-        <div className="px-6 pt-4">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        </div>
-      )}
+      {/* ✅ NOTE:
+          Error box lama tidak ditampilkan lagi karena sudah diganti toast.
+          (State "error" tetap ada agar struktur kode tidak rusak.)
+      */}
 
       {/* Card + Table */}
       <div className="px-6 pt-6">
-        {/* ✅ dibuat lebih lebar + hilang tombol refresh */}
         <div className="w-full max-w-[1200px] rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="px-6 pt-5 pb-2 flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">List User</h2>
@@ -479,7 +622,6 @@ export default function AdminUsersPage() {
                     <th className="py-3 px-3 font-medium">Id</th>
                     <th className="py-3 px-3 font-medium">Nama</th>
                     <th className="py-3 px-3 font-medium">Username</th>
-                    {/* ✅ kolom email dibuat lebih lebar */}
                     <th className="py-3 px-3 font-medium min-w-[260px]">
                       Email
                     </th>
@@ -500,7 +642,7 @@ export default function AdminUsersPage() {
                   ) : filtered.length === 0 ? (
                     <tr>
                       <td className="py-6 px-3 text-gray-500" colSpan={6}>
-                        Data tidak ditemukan.
+                        Data not found.
                       </td>
                     </tr>
                   ) : (
@@ -519,7 +661,6 @@ export default function AdminUsersPage() {
                             <StatusBadge status={u.status} />
                           </td>
 
-                          {/* ✅ Actions: Edit / Delete / Approve */}
                           <td className="py-3 px-3">
                             <div className="flex items-center justify-center gap-2">
                               <button
@@ -582,7 +723,7 @@ export default function AdminUsersPage() {
       <div className="h-12" />
 
       {/* =========================================================
-          ✅ MODAL ADD USER (sesuai gambar Add admin yg kamu pakai)
+          ✅ MODAL ADD USER
          ========================================================= */}
       {openAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -704,7 +845,7 @@ export default function AdminUsersPage() {
       )}
 
       {/* =========================================================
-          ✅ MODAL EDIT USER (mirip edit admin)
+          ✅ MODAL EDIT USER
          ========================================================= */}
       {openEdit && editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -824,7 +965,7 @@ export default function AdminUsersPage() {
       )}
 
       {/* =========================================================
-          ✅ POPUP DELETE USER (sesuai gambar delete admin)
+          ✅ POPUP DELETE USER
          ========================================================= */}
       {openDelete && deleting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -860,7 +1001,9 @@ export default function AdminUsersPage() {
                 <div className="text-sm font-semibold text-gray-900">
                   {deleting.name}
                 </div>
-                <div className="text-sm text-gray-500">{deleting.email || "-"}</div>
+                <div className="text-sm text-gray-500">
+                  {deleting.email || "-"}
+                </div>
               </div>
             </div>
 

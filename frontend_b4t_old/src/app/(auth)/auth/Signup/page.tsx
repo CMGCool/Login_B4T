@@ -23,87 +23,10 @@ import { Button } from "@/components/ui/button";
 
 type SignUpValues = z.infer<typeof signUpFormSchema>;
 
-/** ✅ ADDED: Centralized signup messages */
-const SIGNUP_MESSAGES = {
-  // required fields
-  nameRequired: "Name is required.",
-  usernameRequired: "Username is required.",
-  passwordRequired: "Password is required.",
-
-  // username / email
-  usernameTaken: "Username is already taken.",
-  emailRegistered: "Email is already registered.",
-  emailInvalid: "Please enter a valid email address.",
-
-  // password
-  passwordMin6: "Password must be at least 6 characters long.",
-  passwordConfirmMismatch: "Password confirmation does not match.",
-
-  // ✅ ADDED: success messages (optional)
-  registeredWaitApproval: "Registration successful. Please wait for admin approval.",
-  accountCreated: "Your account has been created successfully.",
-
-  // generic
-  fillRequired: "Please fill in all required fields.",
-  invalidInput: "Invalid input. Please check your data.",
-  registerFailed: "Register failed",
-} as const;
-
-/** ✅ ADDED: map backend validation into friendly messages */
-function mapSignupServerMessage(raw: unknown): string | null {
-  const msg = String(raw ?? "").trim();
-  const lower = msg.toLowerCase();
-
-  if (!msg) return null;
-
-  // username/email uniqueness
-  if (
-    lower.includes("username") &&
-    (lower.includes("taken") || lower.includes("exists") || lower.includes("already"))
-  ) {
-    return SIGNUP_MESSAGES.usernameTaken;
-  }
-  if (
-    lower.includes("email") &&
-    (lower.includes("taken") ||
-      lower.includes("exists") ||
-      lower.includes("already") ||
-      lower.includes("registered"))
-  ) {
-    return SIGNUP_MESSAGES.emailRegistered;
-  }
-  if (
-    lower.includes("email") &&
-    (lower.includes("valid") || lower.includes("format") || lower.includes("invalid"))
-  ) {
-    return SIGNUP_MESSAGES.emailInvalid;
-  }
-
-  // password rules
-  if (lower.includes("password") && (lower.includes("6") || lower.includes("min") || lower.includes("least"))) {
-    return SIGNUP_MESSAGES.passwordMin6;
-  }
-  if (lower.includes("password") && (lower.includes("confirm") || lower.includes("match"))) {
-    return SIGNUP_MESSAGES.passwordConfirmMismatch;
-  }
-
-  // required fields
-  if (lower.includes("required")) {
-    // kalau backend cuma bilang "is required" tanpa jelas field, pakai generic
-    return SIGNUP_MESSAGES.fillRequired;
-  }
-
-  // fallback to original message (kalau sudah bagus)
-  return msg;
-}
-
 export default function SignupPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // ✅ ADDED: success state
-  const [success, setSuccess] = useState<string | null>(null);
 
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpFormSchema),
@@ -120,7 +43,6 @@ export default function SignupPage() {
     try {
       setLoading(true);
       setError(null);
-      setSuccess(null); // ✅ ADDED
 
       await register({
         name: values.name,
@@ -129,28 +51,21 @@ export default function SignupPage() {
         password: values.password,
       });
 
-      // ✅ ADDED: (optional) set success, lalu redirect ke login bawa query success
-      setSuccess(SIGNUP_MESSAGES.accountCreated);
-
-      router.replace("/auth/Signin?success=registered");
+      router.replace("/auth/Signin");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
 
         if (status === 422) {
-          const errors = (err.response?.data as any)?.errors;
-
-          // ✅ ADDED: ambil error pertama dari Laravel validation dan map ke pesan yang kamu mau
+          const errors = err.response?.data?.errors;
           if (errors && typeof errors === "object") {
             const firstKey = Object.keys(errors)[0];
-            const firstMsgRaw = Array.isArray(errors[firstKey])
+            const firstMsg = Array.isArray(errors[firstKey])
               ? errors[firstKey][0]
               : String(errors[firstKey]);
-
-            setError(mapSignupServerMessage(firstMsgRaw) ?? SIGNUP_MESSAGES.invalidInput);
+            setError(firstMsg || "Validation error");
           } else {
-            const msg = (err.response?.data as any)?.message;
-            setError(mapSignupServerMessage(msg) ?? SIGNUP_MESSAGES.invalidInput);
+            setError(err.response?.data?.message ?? "Validation error");
           }
           return;
         }
@@ -160,12 +75,9 @@ export default function SignupPage() {
           return;
         }
 
-        setError(
-          mapSignupServerMessage((err.response?.data as any)?.message) ??
-            SIGNUP_MESSAGES.registerFailed
-        );
+        setError(err.response?.data?.message ?? "Register failed");
       } else {
-        setError(SIGNUP_MESSAGES.registerFailed);
+        setError("Register failed");
       }
     } finally {
       setLoading(false);
@@ -182,11 +94,6 @@ export default function SignupPage() {
             Start your 30-day free trial.
           </p>
         </div>
-
-        {/* ✅ ADDED: Success (simple text) */}
-        {success && (
-          <div className="mb-4 text-sm text-green-600 text-center">{success}</div>
-        )}
 
         {/* Error (seperti simple text) */}
         {error && (
@@ -241,7 +148,8 @@ export default function SignupPage() {
               )}
             />
 
-            {/* (Optional) EMAIL */}
+            {/* (Optional) EMAIL — kalau kamu memang ingin ditampilkan, biarkan.
+                Kalau mau persis gambar (3 field saja), hapus blok ini. */}
             <FormField
               control={form.control}
               name="email"

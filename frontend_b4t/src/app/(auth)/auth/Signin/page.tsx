@@ -24,6 +24,115 @@ import { useRouter } from "next/navigation";
 
 type SignInValues = z.infer<typeof signInFormSchema>;
 
+/** ✅ ADDED: Centralized login messages */
+const LOGIN_MESSAGES = {
+  invalidCreds: "Invalid username or password.",
+  invalidCredsAlt: "The username or password you entered is incorrect.",
+  invalidCredsTry: "Please check your username and password and try again.",
+
+  usernameRequired: "Username is required.",
+  passwordRequired: "Password is required.",
+
+  notApproved: "Your account has not been approved yet.",
+  pendingApproval: "Your account is pending approval.",
+
+  googleRegistered: "This account is registered using Google sign-in.",
+  googlePlease: "Please sign in using Google.",
+
+  failedLater: "Login failed. Please try again later.",
+  somethingWrong: "Something went wrong. Please try again.",
+} as const;
+
+/**
+ * ✅ ADDED: Try to map backend/axios errors into friendly messages
+ * Catatan:
+ * - 401 -> kredensial salah
+ * - 403 -> akun belum aktif / pending approval
+ * - 409 -> akun terdaftar via Google (contoh umum)
+ * - 5xx / network -> pesan umum
+ * - kalau backend sudah kirim "message" yang spesifik, kita coba pakai juga (sepanjang relevan)
+ */
+function getLoginErrorMessage(err: unknown): string {
+  // Default fallback
+  const fallback = LOGIN_MESSAGES.failedLater;
+
+  if (!axios.isAxiosError(err)) return LOGIN_MESSAGES.somethingWrong;
+
+  const status = err.response?.status;
+  const serverMsgRaw =
+    (err.response?.data as any)?.message ??
+    (err.response?.data as any)?.error ??
+    (err.response?.data as any)?.detail ??
+    "";
+
+  const serverMsg = String(serverMsgRaw || "").toLowerCase();
+
+  // Network / no response (timeout, CORS, offline, dll.)
+  if (!err.response) return LOGIN_MESSAGES.failedLater;
+
+  // Common HTTP status mapping
+  if (status === 401) {
+    // pilih salah satu versi pesan invalid creds (kamu bisa ganti jika mau)
+    return LOGIN_MESSAGES.invalidCreds;
+  }
+
+  if (status === 403) {
+    // coba deteksi dari pesan backend kalau ada
+    if (serverMsg.includes("pending") || serverMsg.includes("approval")) {
+      return LOGIN_MESSAGES.pendingApproval;
+    }
+    if (
+      serverMsg.includes("not approved") ||
+      serverMsg.includes("not active") ||
+      serverMsg.includes("inactive") ||
+      serverMsg.includes("belum") ||
+      serverMsg.includes("aktif")
+    ) {
+      return LOGIN_MESSAGES.notApproved;
+    }
+    // fallback untuk 403
+    return LOGIN_MESSAGES.pendingApproval;
+  }
+
+  if (status === 409) {
+    // sering dipakai untuk konflik akun (mis. akun google)
+    return `${LOGIN_MESSAGES.googleRegistered} ${LOGIN_MESSAGES.googlePlease}`;
+  }
+
+  if (status && status >= 500) {
+    return LOGIN_MESSAGES.failedLater;
+  }
+
+  // If backend sends recognizable messages, map them
+  if (
+    serverMsg.includes("google") ||
+    serverMsg.includes("sso") ||
+    serverMsg.includes("oauth")
+  ) {
+    return `${LOGIN_MESSAGES.googleRegistered} ${LOGIN_MESSAGES.googlePlease}`;
+  }
+
+  if (
+    serverMsg.includes("invalid") ||
+    serverMsg.includes("incorrect") ||
+    serverMsg.includes("unauthorized") ||
+    serverMsg.includes("wrong") ||
+    serverMsg.includes("password") ||
+    serverMsg.includes("username")
+  ) {
+    // gunakan salah satu versi invalid creds
+    return LOGIN_MESSAGES.invalidCredsTry;
+  }
+
+  if (serverMsg.includes("pending") || serverMsg.includes("approval")) {
+    return LOGIN_MESSAGES.pendingApproval;
+  }
+
+  // Last: if backend gave a short clear message, use it; otherwise fallback
+  const trimmed = String(serverMsgRaw || "").trim();
+  return trimmed ? trimmed : fallback;
+}
+
 export default function SigninPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -57,11 +166,8 @@ export default function SigninPage() {
         router.replace("/user/welcome");
       }
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message ?? "Login failed");
-      } else {
-        setError("Login failed");
-      }
+      // ✅ CHANGED (minimal): gunakan mapper pesan
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
