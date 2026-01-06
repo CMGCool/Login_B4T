@@ -75,3 +75,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])
 
 // Endpoint untuk CRUD Layanan (hanya admin dan super_admin)
 Route::apiResource('layanan', LayananController::class);
+
+// Endpoint untuk dashboard layanan (hanya admin dan super_admin)
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    Route::get('/dashboard-layanan/usage', [App\Http\Controllers\Api\DashboardLayananController::class, 'layananUsage']);
+    Route::get('/dashboard-layanan/biaya-per-minggu', [App\Http\Controllers\Api\DashboardLayananController::class, 'biayaPerMinggu']);
+});
