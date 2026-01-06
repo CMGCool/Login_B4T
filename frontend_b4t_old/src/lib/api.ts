@@ -1,14 +1,16 @@
-import axios from 'axios';
+import axios from "axios";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL
+    ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api`
+    : "http://127.0.0.1:8000/api",
 });
 
-// Auto-inject token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

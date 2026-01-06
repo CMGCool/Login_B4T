@@ -2,17 +2,16 @@ import { z } from "zod";
 
 /* =======================
    SIGN IN
-   (username / email)
+   (username)
 ======================= */
 export const signInFormSchema = z.object({
   email: z
     .string()
-    .min(3, "Username atau email wajib diisi")
-    .max(100, "Terlalu panjang"),
+    .min(1, { message: "Username is required." }),
 
   password: z
     .string()
-    .min(1, "Password is required"),
+    .min(1, { message: "Password is required." }),
 });
 
 /* =======================
@@ -21,19 +20,24 @@ export const signInFormSchema = z.object({
 export const signUpFormSchema = z.object({
   name: z
     .string()
-    .min(1, "Name is required"),
+    .min(1, { message: "Name is required." }),
 
   username: z
     .string()
-    .min(3, "Username minimal 3 karakter"),
+    .min(1, { message: "Username is required." })
+    .min(3, { message: "Username must be at least 3 characters long." }),
 
   email: z
     .string()
-    .email("Email is not valid")
     .optional()
-    .or(z.literal("")), // ✅ kosong tidak error
+    .or(z.literal(""))
+    .refine(
+      (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+      { message: "Please enter a valid email address." }
+    ),
 
   password: z
     .string()
-    .min(6, "Password minimal 6 karakter"),
+    .min(1, { message: "Password is required." })
+    .min(6, { message: "Password must be at least 6 characters long." }),
 });

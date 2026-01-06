@@ -34,7 +34,7 @@ Login B4T adalah sistem autentikasi lengkap yang menyediakan user management den
 | Role | Username | Password |
 |------|----------|----------|
 | **Super Admin** | `superadmin` | `password123` |
-| **Admin** | `adminit` | `password123` |
+| **Admin** | `admin1` | `password123` |
 
 ---
 
@@ -61,7 +61,7 @@ Login B4T adalah sistem autentikasi lengkap yang menyediakan user management den
 | **Laravel** | 8.75 | PHP Framework |
 | **Laravel Sanctum** | 2.15 | Token Authentication |
 | **Laravel Socialite** | 5.5 | Google OAuth |
-| **MySQL** | 5.7+ | Database |
+| **MySQL** | 5.7 | Database |
 | **Guzzle** | 7.0 | HTTP Client |
 
 ### Frontend
@@ -440,7 +440,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api
 </details>
 
 <details>
-<summary><b>🔧 Step 5-7: API Client, Services & Context</b></summary>
+<summary><b>🔧 Step 5-6: API Client, Services & Context</b></summary>
 
 #### 5. Setup API Client
 
@@ -500,23 +500,12 @@ export const registerSchema = z.object({
 });
 ```
 
-#### 7. Setup Auth Context
-
-**File:** `src/contexts/AuthContext.tsx`
-
-**Provides:**
-- `user` - Current user data
-- `token` - Access token
-- `login(token, user)` - Save to localStorage
-- `logout()` - Clear localStorage
-- `isLoading` - Loading state
-
 </details>
 
 <details>
-<summary><b>🎨 Step 8-10: Routes, Components & Pages</b></summary>
+<summary><b>🎨 Step 7-9: Routes, Components & Pages</b></summary>
 
-#### 8. Create Route Structure
+#### 7. Create Route Structure
 
 ```
 src/app/
@@ -539,7 +528,7 @@ src/app/
     └── layout.tsx              # With header/sidebar
 ```
 
-#### 9. Create Components
+#### 8. Create Components
 
 **Auth Components:**
 - `LoginForm` → Login form with validation
@@ -554,7 +543,7 @@ src/app/
 - `EditUserDialog` → Modal for edit user
 - `StatsCards` → Statistics cards
 
-#### 10. Update Root Layout
+#### 9. Update Root Layout
 
 **File:** `src/app/layout.tsx`
 
