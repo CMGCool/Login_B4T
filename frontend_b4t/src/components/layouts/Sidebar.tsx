@@ -11,6 +11,7 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { FaServicestack } from "react-icons/fa";
 
 type MeResponse = {
   name?: string | null;
@@ -49,6 +50,7 @@ export default function Sidebar() {
   const isDashboard = pathname.startsWith("/super-admin/dashboard");
   const isUsers = pathname.startsWith("/super-admin/users");
   const isAdmin = pathname.startsWith("/super-admin/admin");
+  const isTesting = pathname.startsWith("/layanan");
   const isSettings = pathname.startsWith("/super-admin/settings");
 
   const itemClass = (active: boolean) =>
@@ -125,6 +127,15 @@ export default function Sidebar() {
         >
           <UserCog className="h-4 w-4" />
           Admin
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/super-admin/layanan")}
+          className={itemClass(isTesting)}
+        >
+          < FaServicestack className="h-4 w-4" />
+          Layanan
         </button>
       </nav>
 
