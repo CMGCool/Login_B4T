@@ -4,7 +4,8 @@ import { z } from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
+import ReCAPTCHA from "react-google-recaptcha";
+import { useRef } from "react";
 import { signInFormSchema } from "@/lib/form-schema";
 import { login, loginWithGoogle } from "@/lib/auth";
 
@@ -28,6 +29,8 @@ export default function SigninPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const form = useForm<SignInValues>({
     resolver: zodResolver(signInFormSchema),
@@ -38,6 +41,10 @@ export default function SigninPage() {
   });
 
   const onSubmit = async (values: SignInValues) => {
+    if (!captchaToken) {
+    setError("Please verify that you are not a robot.");
+    return;
+  }
     try {
       setLoading(true);
       setError(null);
@@ -45,6 +52,7 @@ export default function SigninPage() {
       const res = await login({
         login: values.email,
         password: values.password,
+        recaptchaToken: captchaToken,
       });
 
       const role = res?.role;
@@ -62,6 +70,8 @@ export default function SigninPage() {
       } else {
         setError("Login failed");
       }
+      setCaptchaToken(null);
+      recaptchaRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -133,13 +143,19 @@ export default function SigninPage() {
                 </FormItem>
               )}
             />
-
+            <div className="flex justify-center">
+            <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+            onChange={(token) => setCaptchaToken(token)}
+            />
+            </div>
+           
             {/* Button */}
             <Button
               type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-blue-600 hover:bg-blue-700"
-            >
+              disabled={loading || !captchaToken}
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700">
               {loading ? "Signing in..." : "Sign in"}
             </Button>
 
@@ -153,7 +169,7 @@ export default function SigninPage() {
               </div>
             </div>
 
-            {/* ✅ Google SSO Button (dipindah ke bawah) */}
+            {/* Google SSO */}
             <Button
               type="button"
               variant="outline"
