@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Services\RecaptchaService;
 
 class AuthController extends Controller
 {
@@ -37,7 +38,17 @@ class AuthController extends Controller
         $request->validate([
             'username' => 'required',
             'password' => 'required',
+            'recaptchaToken' => 'sometimes|string',
         ]);
+
+        // Verifikasi hanya jika token ada
+        if ($request->has('recaptchaToken') && $request->recaptchaToken) {
+            if (!RecaptchaService::verify($request->recaptchaToken)) {
+                return response()->json([
+                    'message' => 'reCAPTCHA verification failed'
+                ], 422);
+            }
+        }
 
         $user = User::where('username', $request->username)->first();
 
@@ -66,6 +77,7 @@ class AuthController extends Controller
             'role' => $user->role,
             'user' => $user
         ]);
+
     }
 
     public function logout(Request $request)
