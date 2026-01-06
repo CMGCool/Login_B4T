@@ -33,15 +33,27 @@ class DashboardLayananController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        $sum = max($usage->sum('total'), 1); // hindari div/0
+        $totalCount = max($usage->sum('total'), 1); // hindari div/0
 
-        $data = $usage->map(function ($row) use ($sum) {
+        $top = $usage->take(4);
+        $others = $usage->slice(4);
+
+        $data = $top->map(function ($row) use ($totalCount) {
             return [
                 'nama_layanan' => $row->nama_layanan,
                 'count' => (int) $row->total,
-                'percentage' => round(($row->total / $sum) * 100, 2),
+                'percentage' => round(($row->total / $totalCount) * 100, 2),
             ];
         });
+
+        if ($others->isNotEmpty()) {
+            $othersCount = $others->sum('total');
+            $data->push([
+                'nama_layanan' => 'Lainnya',
+                'count' => (int) $othersCount,
+                'percentage' => round(($othersCount / $totalCount) * 100, 2),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Data layanan usage berhasil diambil',
