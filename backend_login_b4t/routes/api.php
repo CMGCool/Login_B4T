@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\SuperAdminController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\DashboardStatsController;
+use App\Http\Controllers\Api\LayananController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,3 +72,6 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])
 // Endpoint untuk admin melihat statistik dashboard
 Route::middleware(['auth:sanctum', 'role:admin'])
     ->get('/admin/dashboard-stats', [DashboardStatsController::class, 'adminStats']);
+
+// Endpoint untuk CRUD Layanan (hanya admin dan super_admin)
+Route::apiResource('layanan', LayananController::class);
