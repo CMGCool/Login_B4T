@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Users, Clock } from "lucide-react";
+import { ServiceCostRecap } from "@/components/dashboard/Servicecost";
+import { TopServicesChart } from "@/components/dashboard/toplayanan";
+
 
 type AdminDashboardStatsResponse = {
   total_user: number;
@@ -22,7 +25,9 @@ type BackendUser = {
 
 export default function AdminDashboardPage() {
   const [search, setSearch] = useState("");
-
+  const now = new Date()
+  const [month, setMonth] = useState(String(now.getMonth() + 1))
+  const [year, setYear] = useState(String(now.getFullYear()))
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +64,6 @@ export default function AdminDashboardPage() {
       const token = getToken();
 
       try {
-        // ✅ Opsi A: kalau endpoint stats admin sudah ada
         const res = await axios.get(
           `${API_BASE_URL}/api/admin/dashboard/stats`,
           {
@@ -83,9 +87,6 @@ export default function AdminDashboardPage() {
             : Array.isArray(res2.data?.data)
             ? res2.data.data
             : [];
-
-          // biasanya endpoint admin/users sudah return role=user saja.
-          // tapi kalau tidak, kita filter aman:
           const onlyUsers = raw.filter(
             (u) => String(u.role ?? "").toLowerCase() === "user" || !u.role
           );
@@ -130,7 +131,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* Header row: Title + Search */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
 
@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Content */}
+      {/* Card */}
       <div className="px-6 pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-[520px]">
           {cards.map((item) => {
@@ -199,6 +199,12 @@ export default function AdminDashboardPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <ServiceCostRecap month={month} year={year} onMonthChange={setMonth}onYearChange={setYear} />
+          <TopServicesChart month={month} year={year} />
         </div>
 
         {/* Helper kecil kalau token belum ada */}

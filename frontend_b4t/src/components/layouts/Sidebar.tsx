@@ -50,7 +50,7 @@ export default function Sidebar() {
   const isDashboard = pathname.startsWith("/super-admin/dashboard");
   const isUsers = pathname.startsWith("/super-admin/users");
   const isAdmin = pathname.startsWith("/super-admin/admin");
-  const isTesting = pathname.startsWith("/layanan");
+  const isTesting = pathname.startsWith("/super-admin/layanan");
   const isSettings = pathname.startsWith("/super-admin/settings");
 
   const itemClass = (active: boolean) =>

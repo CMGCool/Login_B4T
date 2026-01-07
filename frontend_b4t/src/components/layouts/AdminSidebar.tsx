@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { LayoutGrid, Users, Settings, LogOut, UserCircle2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { FaServicestack } from "react-icons/fa";
 
 type MeResponse = {
   name?: string | null;
@@ -46,6 +47,7 @@ export default function AdminSidebar() {
   const isDashboard = pathname.startsWith("/admin/dashboard");
   const isUsers = pathname.startsWith("/admin/users");
   const isSettings = pathname.startsWith("/admin/settings");
+  const isTesting = pathname.startsWith("/admin/layanan");
 
   const itemClass = (active: boolean) =>
     [
@@ -118,6 +120,15 @@ export default function AdminSidebar() {
           <Users className="h-4 w-4" />
           Users
         </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/admin/layanan")}
+          className={itemClass(isTesting)}
+          >
+          < FaServicestack className="h-4 w-4" />
+          Layanan
+          </button>
       </nav>
 
       <div className="flex-1" />

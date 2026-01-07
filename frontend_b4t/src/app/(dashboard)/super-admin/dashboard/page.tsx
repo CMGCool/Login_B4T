@@ -5,6 +5,12 @@ import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Users, UserCog, Clock } from "lucide-react";
 
+import { ServiceCostRecap } from "@/components/dashboard/Servicecost";
+import { TopServicesChart } from "@/components/dashboard/toplayanan";
+
+/* =======================
+   TYPES
+======================= */
 type DashboardStatsResponse = {
   total_admin: number;
   total_user: number;
@@ -21,11 +27,21 @@ type BackendUser = {
   is_approved?: boolean | number | null;
 };
 
+/* =======================
+   COMPONENT
+======================= */
 export default function SuperAdminDashboardPage() {
+  /* ===== UI STATE ===== */
   const [search, setSearch] = useState("");
+
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /* ===== DATA STATE ===== */
   const [statsValue, setStatsValue] = useState<DashboardStatsResponse>({
     total_admin: 0,
     total_user: 0,
@@ -35,46 +51,49 @@ export default function SuperAdminDashboardPage() {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
+  const getToken = () =>
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  /* =======================
+     HELPERS
+  ======================= */
   const mapApproved = (u: BackendUser) => {
-    // Prioritas 1: flag is_approved
     if (u.is_approved === true || u.is_approved === 1) return true;
     if (u.is_approved === false || u.is_approved === 0) return false;
 
-    // Prioritas 2: status string
     const s = String(u.status ?? "").toLowerCase();
     if (s === "approved" || s === "approve") return true;
     if (s === "pending") return false;
 
-    // Default: anggap pending kalau backend belum punya field
     return false;
   };
 
+  /* =======================
+     FETCH DASHBOARD STATS
+  ======================= */
   useEffect(() => {
     const fetchDashboardStats = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const token =
-          typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const token = getToken();
+        const headers = token
+          ? { Authorization: `Bearer ${token}` }
+          : undefined;
 
-        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-
-        // ✅ 1) ambil stats (endpoint DISAMAKAN dengan routes/api.php)
-        // routes kamu: GET /api/super-admin/dashboard-stats
+        // 1️⃣ Stats utama
         const res = await axios.get(
           `${API_BASE_URL}/api/super-admin/dashboard-stats`,
           { headers }
         );
 
-        // ✅ tahan banting jika backend mengembalikan {data:{...}} atau langsung {...}
         const statsData = res.data?.data ?? res.data ?? {};
 
         const total_admin = Number(statsData?.total_admin ?? 0);
         const total_user = Number(statsData?.total_user ?? 0);
 
-        // ✅ 2) ambil list users untuk hitung pending approval
-        // sesuai routes: GET /api/super-admin/users
+        // 2️⃣ Users untuk pending approval
         const resUsers = await axios.get(
           `${API_BASE_URL}/api/super-admin/users`,
           { headers }
@@ -86,13 +105,14 @@ export default function SuperAdminDashboardPage() {
           ? resUsers.data.data
           : [];
 
-        // hanya role=user (kalau backend ga kirim role, tetap dihitung)
         const onlyUsers = raw.filter((u) => {
           const r = String(u.role ?? "").toLowerCase();
-          return r === "user" || r === ""; // "" artinya field role tidak ada
+          return r === "user" || r === "";
         });
 
-        const pending_approval = onlyUsers.filter((u) => !mapApproved(u)).length;
+        const pending_approval = onlyUsers.filter(
+          (u) => !mapApproved(u)
+        ).length;
 
         setStatsValue({
           total_admin,
@@ -103,7 +123,7 @@ export default function SuperAdminDashboardPage() {
         setError(
           e?.response?.data?.message ||
             e?.message ||
-            "Gagal mengambil data dashboard dari backend."
+            "Gagal mengambil data dashboard super admin."
         );
       } finally {
         setLoading(false);
@@ -113,6 +133,9 @@ export default function SuperAdminDashboardPage() {
     fetchDashboardStats();
   }, [API_BASE_URL]);
 
+  /* =======================
+     CARDS
+  ======================= */
   const stats = useMemo(
     () => [
       {
@@ -137,9 +160,12 @@ export default function SuperAdminDashboardPage() {
     [statsValue]
   );
 
+  /* =======================
+     RENDER
+  ======================= */
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* Header row */}
+      {/* HEADER */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
 
@@ -164,10 +190,9 @@ export default function SuperAdminDashboardPage() {
         </div>
       </div>
 
-      {/* Garis transparan */}
       <div className="mx-6 mt-4 border-b border-gray-200/60" />
 
-      {/* Error box */}
+      {/* ERROR */}
       {error && (
         <div className="px-6 pt-4">
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -176,7 +201,7 @@ export default function SuperAdminDashboardPage() {
         </div>
       )}
 
-      {/* Content */}
+      {/* STATS */}
       <div className="px-6 pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-[780px]">
           {stats.map((item) => {
@@ -202,7 +227,21 @@ export default function SuperAdminDashboardPage() {
         </div>
       </div>
 
+      {/* CHARTS */}
+      <div className="px-6 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ServiceCostRecap
+            month={month}
+            year={year}
+            onMonthChange={setMonth}
+            onYearChange={setYear}
+          />
+          <TopServicesChart month={month} year={year} />
+        </div>
+      </div>
+
       <div className="h-12" />
     </div>
   );
 }
+
