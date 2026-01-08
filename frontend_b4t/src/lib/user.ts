@@ -14,11 +14,22 @@ export type User = {
   created_at?: string;
 };
 
+/* ===== GET CURRENT USER (untuk dashboard & testing) ===== */
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const res = await api.get("/me");
+    return res.data?.user || res.data;
+  } catch (e) {
+    return null;
+  }
+}
+
 /* ===== EXISTING (biarkan) ===== */
 export async function getProfile(): Promise<User> {
   const res = await api.get("/me");
   return res.data;
 }
+
 
 /* =======================
    ✅ LIST USERS (SUPER ADMIN)
