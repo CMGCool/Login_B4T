@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\DashboardStatsController;
 use App\Http\Controllers\Api\LayananController;
+use App\Http\Controllers\Api\TargetsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,3 +82,6 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
     Route::get('/dashboard-layanan/usage', [App\Http\Controllers\Api\DashboardLayananController::class, 'layananUsage']);
     Route::get('/dashboard-layanan/biaya-per-minggu', [App\Http\Controllers\Api\DashboardLayananController::class, 'biayaPerMinggu']);
 });
+
+// Endpoint untuk CRUD target (hanya admin dan super_admin)
+Route::apiResource('target', TargetsController::class);
