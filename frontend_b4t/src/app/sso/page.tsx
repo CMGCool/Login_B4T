@@ -18,6 +18,8 @@ export default function SSOCallbackPage() {
     }
 
     localStorage.setItem("token", token);
+    // Set cookie shared agar dashboard_b4t bisa pakai sesi yang sama
+    document.cookie = `token=${token}; path=/; domain=localhost; SameSite=Lax`;
 
     if (role === "super_admin") {
       router.replace("/super-admin/dashboard");

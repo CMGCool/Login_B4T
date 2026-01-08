@@ -25,7 +25,12 @@ export async function login(data: LoginPayload) {
 
   if (typeof window !== "undefined") {
     const token = res.data?.token || res.data?.access_token;
-    if (token) localStorage.setItem("token", token);
+    if (token) {
+      // Simpan untuk app ini (tetap pertahankan behavior lama)
+      localStorage.setItem("token", token);
+      // Set cookie shared antar port (agar dashboard_b4t bisa pakai)
+      document.cookie = `token=${token}; path=/; domain=localhost; SameSite=Lax`;
+    }
   }
 
   return res.data;
@@ -43,6 +48,22 @@ export async function register(data: RegisterPayload) {
 export function logoutLocal() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
+  }
+}
+
+/* =======================
+   LOGOUT (Server + Cookie + Local)
+   ======================= */
+export async function logoutAll() {
+  try {
+    await api.post("/logout");
+  } catch (e) {
+    // ignore
+  }
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("token");
+    // Hapus cookie shared
+    document.cookie = "token=; path=/; domain=localhost; Max-Age=0";
   }
 }
 
