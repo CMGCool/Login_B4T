@@ -17,7 +17,28 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Panggil backend untuk invalidasi token di server
+      await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "") + "/api/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(() => {
+            // Ambil token dari cookie untuk Authorization
+            const match = typeof document !== "undefined"
+              ? document.cookie.match(/(?:^|; )token=([^;]*)/)
+              : null;
+            const token = match ? decodeURIComponent(match[1]) : null;
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          })(),
+        },
+      });
+    } catch (e) {
+      // Abaikan error, lanjutkan hapus cookie di client
+    }
+
     // Hapus cookie (dashboard tidak pakai localStorage)
     document.cookie = "token=; path=/; domain=localhost; Max-Age=0";
     // Redirect ke login 3000
