@@ -78,6 +78,19 @@ class AuthController extends Controller
             'user' => $user
         ]);
 
+        // PROD VERSION (uncomment saat deploy):
+        // ])->cookie(
+        //     'token',
+        //     $token,
+        //     60 * 24 * 7,
+        //     '/',
+        //     '.yourdomain.com', // shared subdomain
+        //     true, // secure: HTTPS only
+        //     true, // httpOnly: tidak bisa diakses JS (XSS protection)
+        //     false,
+        //     'lax'
+        // );
+
     }
 
     public function logout(Request $request)
@@ -88,5 +101,18 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Logout berhasil'
         ]);
+
+        // PROD VERSION (uncomment saat deploy):
+        // ])->cookie(
+        //     'token',
+        //     '',
+        //     -1,
+        //     '/',
+        //     '.yourdomain.com',
+        //     true,
+        //     true,
+        //     false,
+        //     'lax'
+        // );
     }
 }

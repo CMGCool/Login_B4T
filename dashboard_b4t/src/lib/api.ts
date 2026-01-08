@@ -1,0 +1,51 @@
+const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+type FetchOpts = RequestInit & { path: string };
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\/+^])/g, "\\$1") + "=([^;]*)"));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  // Dashboard HANYA baca dari cookie (shared dari port 3000)
+  const token = readCookie("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function fetchWithAuth<T = unknown>({ path, ...opts }: FetchOpts): Promise<T> {
+  const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
+
+  const res = await fetch(url, {
+    credentials: "include", // cookie jika ada
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+      ...(opts.headers || {}),
+    },
+    ...opts,
+  });
+
+  if (!res.ok) {
+    const message = await safeMessage(res);
+    throw new Error(message || `Request gagal (${res.status})`);
+  }
+
+  if (res.status === 204) return null as T;
+  return (await res.json()) as T;
+}
+
+async function safeMessage(res: Response) {
+  try {
+    const data = await res.json();
+    return typeof data?.message === "string" ? data.message : "";
+  } catch (e) {
+    return "";
+  }
+}
+
+export async function getCurrentUser() {
+  return fetchWithAuth<{ user?: unknown; data?: unknown }>({ path: "/api/me" });
+}

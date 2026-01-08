@@ -49,9 +49,33 @@ class GoogleAuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return redirect(
-            "http://localhost:3000/sso?token=$token&role={$user->role}"
-        );
+        // DEV VERSION (uncomment saat develop):
+        return redirect("http://localhost:3000/sso?token=$token&role={$user->role}")
+            ->cookie(
+                'token',
+                $token,
+                60 * 24 * 7,
+                '/',
+                'localhost',
+                true,
+                true,
+                false,
+                'lax'
+            );
+
+        // PROD VERSION (uncomment saat deploy):
+        // return redirect("https://login.yourdomain.com/sso?token=$token&role={$user->role}")
+        //     ->cookie(
+        //         'token',
+        //         $token,
+        //         60 * 24 * 7,
+        //         '/',
+        //         '.yourdomain.com',
+        //         true,
+        //         true,
+        //         false,
+        //         'lax'
+        //     );
     }
 
     private function generateUniqueUsername($email)

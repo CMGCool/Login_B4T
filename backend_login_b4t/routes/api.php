@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\LayananController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 // Logout route
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
