@@ -53,17 +53,25 @@ class TargetsController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'bulan' => 'required|string|max:255',
-            'target_perbulan' => 'required|integer|min:0',
-            'tahun' => 'required|integer|min:0',
-        ]);
+        $data = $request->all();
 
-        $target = Target::create($validated);
+        // kalau single object → ubah jadi array
+        if (isset($data['bulan'])) {
+            $data = [$data];
+        }
+
+        $validated = validator($data, [
+            '*.bulan' => 'required|string|max:255',
+            '*.target_perbulan' => 'required|integer|min:0',
+            '*.tahun' => 'required|integer|min:0',
+        ])->validate();
+
+        Target::insert($validated);
 
         return response()->json([
             'message' => 'Target berhasil dibuat',
-            'data' => $target
+            'jumlah_data' => count($validated),
+            'data' => $validated
         ], 201);
     }
 
@@ -130,6 +138,4 @@ class TargetsController extends Controller
             'data' => $target
         ], 200);
     }
-
-    
 }

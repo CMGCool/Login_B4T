@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\DashboardStatsController;
 use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\TargetsController;
+use App\Http\Controllers\Api\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,3 +86,8 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
 
 // Endpoint untuk CRUD target (hanya admin dan super_admin)
 Route::apiResource('target', TargetsController::class);
+
+// Endpoint untuk Analytics/Chart (admin dan super_admin)
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    Route::get('/analytics/chart-biaya-vs-target', [AnalyticsController::class, 'chartBiayaVsTarget']);
+});
