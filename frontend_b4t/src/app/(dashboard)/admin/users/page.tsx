@@ -39,19 +39,6 @@ function approved(v: any) {
   return v === true || v === 1 || v === "1";
 }
 
-/* =========================================================
-   ✅ ADDED: Simple Toast System (Top Right)
-   - Success: Green
-   - Error: Red
-========================================================= */
-type ToastType = "success" | "error";
-
-type ToastItem = {
-  id: number;
-  type: ToastType;
-  message: string;
-};
-
 export default function AdminUsersPage() {
   const router = useRouter();
 
@@ -92,33 +79,28 @@ export default function AdminUsersPage() {
     );
   }
 
-  // ✅ ADDED: toast state + helpers
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const toastIdRef = useRef(1);
+  /* =======================
+     ✅ TOAST (SINGLE, seperti contoh)
+  ======================= */
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimer = useRef<number | null>(null);
 
-  function pushToast(type: ToastType, message: string) {
-    const id = toastIdRef.current++;
-    const item: ToastItem = { id, type, message };
+  function showToast(message: string) {
+    setToastMsg(message);
+    setToastOpen(true);
 
-    setToasts((prev) => [item, ...prev]);
-
-    // auto-dismiss
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToastOpen(false);
     }, 3500);
   }
 
-  function toastSuccess(message: string) {
-    pushToast("success", message);
-  }
-
-  function toastError(message: string) {
-    pushToast("error", message);
-  }
-
-  function dismissToast(id: number) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   const mapStatus = (u: BackendUser): "Approve" | "Pending" => {
     if (u.is_approved === true || u.is_approved === 1) return "Approve";
@@ -170,7 +152,7 @@ export default function AdminUsersPage() {
       const msg =
         getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setLoading(false);
     }
@@ -246,14 +228,14 @@ export default function AdminUsersPage() {
         )
       );
 
-      toastSuccess("User approved successfully.");
+      showToast("User approved successfully.");
 
       setIsModalOpen(false);
       setSelectedUser(null);
     } catch (e: any) {
       const msg = getApiErrorMessage(e) || "Gagal approve user. Coba lagi.";
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setConfirmLoading(false);
     }
@@ -342,7 +324,7 @@ export default function AdminUsersPage() {
     if (!addForm.name.trim() || !addForm.username.trim() || !addForm.password) {
       const msg = "Name, Username, dan Password wajib diisi.";
       setError(msg);
-      toastError(msg);
+      showToast(msg);
       return;
     }
 
@@ -357,14 +339,14 @@ export default function AdminUsersPage() {
         password: addForm.password,
       });
 
-      toastSuccess("User added successfully.");
+      showToast("User added successfully.");
 
       closeAddModal();
       await fetchUsers();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setSavingAdd(false);
     }
@@ -427,7 +409,7 @@ export default function AdminUsersPage() {
     if (!editForm.name.trim() || !editForm.username.trim()) {
       const msg = "Name dan Username wajib diisi.";
       setError(msg);
-      toastError(msg);
+      showToast(msg);
       return;
     }
 
@@ -435,7 +417,7 @@ export default function AdminUsersPage() {
       const msg =
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
       setError(msg);
-      toastError(msg);
+      showToast(msg);
       return;
     }
 
@@ -459,14 +441,14 @@ export default function AdminUsersPage() {
 
       await updateUser(editing.id, payload);
 
-      toastSuccess("User updated successfully.");
+      showToast("User updated successfully.");
 
       closeEditModal();
       await fetchUsers();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setEditSaving(false);
     }
@@ -504,7 +486,7 @@ export default function AdminUsersPage() {
       const msg =
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
       setError(msg);
-      toastError(msg);
+      showToast(msg);
       return;
     }
 
@@ -514,14 +496,14 @@ export default function AdminUsersPage() {
 
       await deleteUser(deleting.id);
 
-      toastSuccess("User deleted successfully.");
+      showToast("User deleted successfully.");
 
       closeDeleteModal();
       await fetchUsers();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setDeleteSaving(false);
     }
@@ -529,49 +511,24 @@ export default function AdminUsersPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* ✅ ADDED: Toast Container (Top Right) */}
-      <div className="fixed top-4 right-4 z-[9999] space-y-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={[
-              "w-[320px] rounded-xl border px-4 py-3 shadow-lg",
-              "backdrop-blur bg-white/95",
-              t.type === "success"
-                ? "border-green-200"
-                : "border-red-200",
-            ].join(" ")}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={[
-                    "mt-0.5 h-2.5 w-2.5 rounded-full",
-                    t.type === "success" ? "bg-green-500" : "bg-red-500",
-                  ].join(" ")}
-                />
-                <div
-                  className={[
-                    "text-sm font-medium",
-                    t.type === "success" ? "text-green-700" : "text-red-700",
-                  ].join(" ")}
-                >
-                  {t.message}
-                </div>
-              </div>
+      {/* TOAST (kanan atas) */}
+      {toastOpen && (
+        <div className="fixed top-6 right-6 z-[9999]">
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 shadow-md min-w-[320px] max-w-[520px]">
+            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <p className="text-sm font-medium text-green-800">{toastMsg}</p>
 
-              <button
-                type="button"
-                onClick={() => dismissToast(t.id)}
-                className="rounded-md p-1 text-gray-400 hover:text-gray-700"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => setToastOpen(false)}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-green-100"
+              aria-label="Close"
+              title="Close"
+            >
+              <X size={16} className="text-green-800" />
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Header: Users + Search */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
@@ -591,11 +548,6 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="mx-6 mt-4 border-b border-gray-200/60" />
-
-      {/* ✅ NOTE:
-          Error box lama tidak ditampilkan lagi karena sudah diganti toast.
-          (State "error" tetap ada agar struktur kode tidak rusak.)
-      */}
 
       {/* Card + Table */}
       <div className="px-6 pt-6">

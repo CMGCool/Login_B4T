@@ -7,6 +7,7 @@ import { Users, UserCog, Clock } from "lucide-react";
 
 import { ServiceCostRecap } from "@/components/dashboard/Servicecost";
 import { TopServicesChart } from "@/components/dashboard/toplayanan";
+import { RevenuePerformanceChart } from "@/components/dashboard/RevenuePerformanceChart";
 
 /* =======================
    TYPES
@@ -110,9 +111,7 @@ export default function SuperAdminDashboardPage() {
           return r === "user" || r === "";
         });
 
-        const pending_approval = onlyUsers.filter(
-          (u) => !mapApproved(u)
-        ).length;
+        const pending_approval = onlyUsers.filter((u) => !mapApproved(u)).length;
 
         setStatsValue({
           total_admin,
@@ -209,10 +208,10 @@ export default function SuperAdminDashboardPage() {
             return (
               <div
                 key={item.key}
-                className="relative rounded-2xl bg-blue-600 text-white p-5 shadow-sm"
+                className="relative rounded-2xl bg-[#4385F6] text-white p-5 shadow-sm"
               >
                 <div className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95">
-                  <Icon className="h-5 w-5 text-blue-600" />
+                  <Icon className="h-5 w-5 text-[#4385F6]" />
                 </div>
 
                 <div className="pt-12">
@@ -237,11 +236,13 @@ export default function SuperAdminDashboardPage() {
             onYearChange={setYear}
           />
           <TopServicesChart month={month} year={year} />
+          <div className="lg:col-span-2">
+          <RevenuePerformanceChart />
         </div>
+      </div>
       </div>
 
       <div className="h-12" />
     </div>
   );
 }
-

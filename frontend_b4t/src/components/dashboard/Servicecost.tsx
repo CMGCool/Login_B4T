@@ -163,7 +163,7 @@ export function ServiceCostRecap({
               <Bar
                 dataKey="value"
                 radius={[10, 10, 10, 10]}
-                fill="#2EA3F2"
+                fill="#EB4336"
               />
             </BarChart>
           </ResponsiveContainer>

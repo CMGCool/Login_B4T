@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Pencil, Trash2, Plus, X } from "lucide-react";
 
-
 type BackendLayanan = {
   id: number | string;
   nama_layanan?: string | null;
@@ -22,16 +21,6 @@ type UiLayanan = {
   nama_layanan: string;
   tanggal_layanan: string; // YYYY-MM-DD
   pembayaran: number; // integer
-};
-
-/* =======================
-   ✅ TOAST
-======================= */
-type ToastType = "success" | "error";
-type ToastItem = {
-  id: number;
-  type: ToastType;
-  message: string;
 };
 
 export default function SuperAdminTestingPage() {
@@ -54,30 +43,28 @@ export default function SuperAdminTestingPage() {
 
   const [rows, setRows] = useState<UiLayanan[]>([]);
 
-  // toast
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const toastIdRef = useRef(1);
+  /* =======================
+     ✅ TOAST (SINGLE)
+  ======================= */
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimer = useRef<number | null>(null);
 
-  function pushToast(type: ToastType, message: string) {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [{ id, type, message }, ...prev]);
+  function showToast(message: string) {
+    setToastMsg(message);
+    setToastOpen(true);
 
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToastOpen(false);
     }, 3500);
   }
 
-  function toastSuccess(message: string) {
-    pushToast("success", message);
-  }
-
-  function toastError(message: string) {
-    pushToast("error", message);
-  }
-
-  function dismissToast(id: number) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   function getApiErrorMessage(e: any) {
     return (
@@ -89,9 +76,7 @@ export default function SuperAdminTestingPage() {
   }
 
   /* =======================
-     ✅ ENDPOINTS (sesuai routes/api.php)
-     /apiResource('layanan', LayananController::class)
-     baseURL sudah API_BASE_URL, jadi path cukup "/api/layanan"
+     ✅ ENDPOINTS
   ======================= */
   const ENDPOINT_LIST = "/api/layanan";
   const ENDPOINT_CREATE = "/api/layanan";
@@ -108,7 +93,6 @@ export default function SuperAdminTestingPage() {
     try {
       const res = await axiosAuth.get(ENDPOINT_LIST);
 
-      // backend kamu: { message: "...", data: [...] }
       const raw: BackendLayanan[] = Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data)
@@ -118,7 +102,7 @@ export default function SuperAdminTestingPage() {
       const mapped: UiLayanan[] = raw.map((r) => ({
         id: r.id,
         nama_layanan: String(r.nama_layanan ?? "-"),
-        tanggal_layanan: String(r.tanggal_layanan ?? ""), // YYYY-MM-DD
+        tanggal_layanan: String(r.tanggal_layanan ?? ""),
         pembayaran: Number(r.pembayaran ?? 0),
       }));
 
@@ -126,7 +110,7 @@ export default function SuperAdminTestingPage() {
     } catch (e: any) {
       const msg = getApiErrorMessage(e) || "Gagal mengambil data layanan.";
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setLoading(false);
     }
@@ -170,7 +154,6 @@ export default function SuperAdminTestingPage() {
   }
 
   function formatDate(date: string) {
-    // input: YYYY-MM-DD
     if (!date) return "-";
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return date;
@@ -189,8 +172,8 @@ export default function SuperAdminTestingPage() {
 
   const [addForm, setAddForm] = useState({
     nama_layanan: "",
-    tanggal_layanan: "", // ✅ date (YYYY-MM-DD)
-    pembayaran: "", // string input -> number
+    tanggal_layanan: "",
+    pembayaran: "",
   });
 
   function openAddModal() {
@@ -207,12 +190,12 @@ export default function SuperAdminTestingPage() {
 
   async function onConfirmAdd() {
     if (!addForm.nama_layanan.trim() || !addForm.tanggal_layanan) {
-      toastError("Nama Layanan dan Tanggal Layanan wajib diisi.");
+      showToast("Nama Layanan dan Tanggal Layanan wajib diisi.");
       return;
     }
 
     if (!token) {
-      toastError(
+      showToast(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -222,23 +205,19 @@ export default function SuperAdminTestingPage() {
       setSaving(true);
       setError(null);
 
-      // backend validate:
-      // nama_layanan required|string
-      // tanggal_layanan required|date
-      // pembayaran required|integer|min:0
       await axiosAuth.post(ENDPOINT_CREATE, {
         nama_layanan: addForm.nama_layanan.trim(),
-        tanggal_layanan: addForm.tanggal_layanan, // ✅ YYYY-MM-DD
+        tanggal_layanan: addForm.tanggal_layanan,
         pembayaran: Number(addForm.pembayaran || 0),
       });
 
-      toastSuccess("Layanan berhasil dibuat.");
+      showToast("Layanan berhasil dibuat.");
       closeAddModal();
       await fetchLayanan();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setSaving(false);
     }
@@ -275,7 +254,7 @@ export default function SuperAdminTestingPage() {
     if (!openEdit || !editing) return;
     setEditForm({
       nama_layanan: String(editing.nama_layanan ?? ""),
-      tanggal_layanan: String(editing.tanggal_layanan ?? ""), // ✅ YYYY-MM-DD
+      tanggal_layanan: String(editing.tanggal_layanan ?? ""),
       pembayaran: String(editing.pembayaran ?? 0),
     });
   }, [openEdit, editing]);
@@ -284,12 +263,12 @@ export default function SuperAdminTestingPage() {
     if (!editing) return;
 
     if (!editForm.nama_layanan.trim() || !editForm.tanggal_layanan) {
-      toastError("Nama Layanan dan Tanggal Layanan wajib diisi.");
+      showToast("Nama Layanan dan Tanggal Layanan wajib diisi.");
       return;
     }
 
     if (!token) {
-      toastError(
+      showToast(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -299,20 +278,19 @@ export default function SuperAdminTestingPage() {
       setEditSaving(true);
       setError(null);
 
-      // backend update validate: sometimes|...
       await axiosAuth.put(ENDPOINT_UPDATE(editing.id), {
         nama_layanan: editForm.nama_layanan.trim(),
         tanggal_layanan: editForm.tanggal_layanan,
         pembayaran: Number(editForm.pembayaran || 0),
       });
 
-      toastSuccess("Layanan berhasil diperbarui.");
+      showToast("Layanan berhasil diperbarui.");
       closeEditModal();
       await fetchLayanan();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setEditSaving(false);
     }
@@ -342,7 +320,7 @@ export default function SuperAdminTestingPage() {
     if (!deleting) return;
 
     if (!token) {
-      toastError(
+      showToast(
         'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
       );
       return;
@@ -354,13 +332,13 @@ export default function SuperAdminTestingPage() {
 
       await axiosAuth.delete(ENDPOINT_DELETE(deleting.id));
 
-      toastSuccess("Layanan berhasil dihapus.");
+      showToast("Layanan berhasil dihapus.");
       closeDeleteModal();
       await fetchLayanan();
     } catch (e: any) {
       const msg = getApiErrorMessage(e);
       setError(msg);
-      toastError(msg);
+      showToast(msg);
     } finally {
       setDeleteSaving(false);
     }
@@ -368,43 +346,24 @@ export default function SuperAdminTestingPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* ===== TOAST (TOP RIGHT) ===== */}
-      <div className="fixed top-4 right-4 z-[9999] space-y-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${
-              t.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                    t.type === "success" ? "bg-green-500" : "bg-red-500"
-                  }`}
-                />
-                <p
-                  className={`text-sm font-medium ${
-                    t.type === "success" ? "text-green-700" : "text-red-700"
-                  }`}
-                >
-                  {t.message}
-                </p>
-              </div>
+      {/* TOAST (kanan atas) */}
+      {toastOpen && (
+        <div className="fixed top-6 right-6 z-[9999]">
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 shadow-md min-w-[320px] max-w-[520px]">
+            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <p className="text-sm font-medium text-green-800">{toastMsg}</p>
 
-              <button
-                type="button"
-                onClick={() => dismissToast(t.id)}
-                className="text-gray-400 hover:text-gray-700"
-                aria-label="Close toast"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => setToastOpen(false)}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-green-100"
+              aria-label="Close"
+              title="Close"
+            >
+              <X size={16} className="text-green-800" />
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Header: Testing Service + Search */}
       <div className="flex items-center justify-between gap-4 px-6 pt-6">
@@ -489,10 +448,7 @@ export default function SuperAdminTestingPage() {
                     </tr>
                   ) : (
                     filtered.map((r, idx) => (
-                      <tr
-                        key={String(r.id)}
-                        className="border-t border-gray-100"
-                      >
+                      <tr key={String(r.id)} className="border-t border-gray-100">
                         <td className="py-3 px-3">{idx + 1}</td>
                         <td className="py-3 px-3">{r.nama_layanan}</td>
                         <td className="py-3 px-3">

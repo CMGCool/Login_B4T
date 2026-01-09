@@ -452,7 +452,7 @@ export default function SuperAdminAdminPage() {
 
       {/* Card + Table */}
       <div className="px-6 pt-6">
-        <div className="w-full max-w-[980px] rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="w-full max-w-[1500px] rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="flex items-center justify-between px-6 pt-5 pb-3">
             <h2 className="text-base font-semibold text-gray-900">List Admin</h2>
 

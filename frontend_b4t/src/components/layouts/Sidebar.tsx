@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { FaServicestack } from "react-icons/fa";
+import { FaArrowTrendUp } from "react-icons/fa6";
 
 type MeResponse = {
   name?: string | null;
@@ -50,7 +51,8 @@ export default function Sidebar() {
   const isDashboard = pathname.startsWith("/super-admin/dashboard");
   const isUsers = pathname.startsWith("/super-admin/users");
   const isAdmin = pathname.startsWith("/super-admin/admin");
-  const isTesting = pathname.startsWith("/super-admin/layanan");
+   const isTesting = pathname.startsWith("/super-admin/testing");
+  const isTarget = pathname.startsWith("/super-admin/target");
   const isSettings = pathname.startsWith("/super-admin/settings");
 
   const itemClass = (active: boolean) =>
@@ -136,6 +138,15 @@ export default function Sidebar() {
         >
           < FaServicestack className="h-4 w-4" />
           Layanan
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/super-admin/target")}
+          className={itemClass(isTarget)}
+        >
+          <FaArrowTrendUp className="h-4 w-4" />
+          Revenue Target
         </button>
       </nav>
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Users, Clock } from "lucide-react";
 import { ServiceCostRecap } from "@/components/dashboard/Servicecost";
 import { TopServicesChart } from "@/components/dashboard/toplayanan";
+import { RevenuePerformanceChart } from "@/components/dashboard/RevenuePerformanceChart";
 
 
 type AdminDashboardStatsResponse = {
@@ -205,6 +206,9 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <ServiceCostRecap month={month} year={year} onMonthChange={setMonth}onYearChange={setYear} />
           <TopServicesChart month={month} year={year} />
+        <div className="lg:col-span-2">
+                  <RevenuePerformanceChart />
+        </div>
         </div>
 
         {/* Helper kecil kalau token belum ada */}
