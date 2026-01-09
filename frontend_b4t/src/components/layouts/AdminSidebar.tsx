@@ -5,6 +5,7 @@ import axios from "axios";
 import { LayoutGrid, Users, Settings, LogOut, UserCircle2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { FaServicestack } from "react-icons/fa";
+import { FaArrowTrendUp } from "react-icons/fa6";
 
 type MeResponse = {
   name?: string | null;
@@ -48,6 +49,7 @@ export default function AdminSidebar() {
   const isUsers = pathname.startsWith("/admin/users");
   const isSettings = pathname.startsWith("/admin/settings");
   const isTesting = pathname.startsWith("/admin/layanan");
+  const isTarget = pathname.startsWith("/admin/target");
 
   const itemClass = (active: boolean) =>
     [
@@ -128,6 +130,15 @@ export default function AdminSidebar() {
           >
           < FaServicestack className="h-4 w-4" />
           Layanan
+          </button>
+
+          <button
+          type="button"
+          onClick={() => router.push("/admin/target")}
+          className={itemClass(isTarget)}
+          >
+          <FaArrowTrendUp className="h-4 w-4" />
+          Revenue Target
           </button>
       </nav>
 

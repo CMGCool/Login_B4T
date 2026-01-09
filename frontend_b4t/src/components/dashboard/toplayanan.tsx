@@ -29,10 +29,10 @@ type TopServiceItem = {
 };
 
 const COLORS = [
-  "#2EA3F2",
-  "#1E7EC8",
-  "#155A8A",
-  "#0E3E5C",
+  "#EB4336",
+  "#4385F6",
+  "#F9BD05",
+  "#35A654",
 ];
 
 export function TopServicesChart({ month, year }: Props) {

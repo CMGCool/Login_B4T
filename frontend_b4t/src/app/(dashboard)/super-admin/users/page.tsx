@@ -1,88 +1,74 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-
-import {
-  approveUser,
-  createUser,
-  getSuperAdminUsers,
-  updateUser,
-  deleteUser,
-  type User,
-} from "@/lib/user";
-
+import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Pencil, Trash2, Check, Eye, EyeOff, X } from "lucide-react";
+import {
+  Search,
+  Check,
+  X,
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+
+type BackendUser = {
+  id: number | string;
+  name?: string | null;
+  username?: string | null;
+  email?: string | null;
+  role?: string | null;
+  status?: string | null;
+  is_approved?: boolean | number | null;
+};
+
+type UiUser = {
+  id: number | string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
+  status: "Approve" | "Pending";
+};
 
 function approved(v: any) {
   return v === true || v === 1 || v === "1";
 }
 
-type Notice = { type: "success" | "error"; message: string } | null;
-
 export default function SuperAdminUsersPage() {
   const router = useRouter();
 
-  const [items, setItems] = useState<User[]>([]);
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
 
-  const [notice, setNotice] = useState<Notice>(null);
-  const [q, setQ] = useState("");
+  // tetap dipertahankan (biar tidak merusak struktur), tapi notifikasi utama pakai toast
+  const [error, setError] = useState<string | null>(null);
 
-  // modal add user
-  const [openAdd, setOpenAdd] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    username: "",
-    email: "",
-    password: "",
-  });
+  const [users, setUsers] = useState<UiUser[]>([]);
 
-  // modal edit user
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editSaving, setEditSaving] = useState(false);
-  const [showEditPassword, setShowEditPassword] = useState(false);
-  const [editing, setEditing] = useState<User | null>(null);
+  // ===== Approve Modal state (sudah ada) =====
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UiUser | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // ✅ password edit dibuat kosong (optional)
-  const [editForm, setEditForm] = useState({
-    name: "",
-    username: "",
-    email: "",
-    password: "",
-  });
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // modal delete user
-  const [openDelete, setOpenDelete] = useState(false);
-  const [deleteSaving, setDeleteSaving] = useState(false);
-  const [deleting, setDeleting] = useState<User | null>(null);
-
-  // modal approve user
-  const [openApprove, setOpenApprove] = useState(false);
-  const [approveSaving, setApproveSaving] = useState(false);
-  const [approving, setApproving] = useState<User | null>(null);
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return items;
-    return items.filter(
-      (u) =>
-        String(u.name ?? "").toLowerCase().includes(s) ||
-        String(u.username ?? "").toLowerCase().includes(s) ||
-        String(u.email ?? "").toLowerCase().includes(s)
-    );
-  }, [items, q]);
-
-  function showNotice(n: Notice) {
-    setNotice(n);
-    if (!n) return;
-    window.setTimeout(() => setNotice(null), 3000);
-  }
+  const axiosAuth = useMemo(() => {
+    return axios.create({
+      baseURL: API_BASE_URL,
+      headers: token
+        ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
+        : { Accept: "application/json" },
+    });
+  }, [API_BASE_URL, token]);
 
   function getApiErrorMessage(e: any) {
     return (
@@ -93,304 +79,541 @@ export default function SuperAdminUsersPage() {
     );
   }
 
-  async function load() {
-    setLoading(true);
-    setErr(null);
-    try {
-      const data = await getSuperAdminUsers();
-      setItems(
-        (Array.isArray(data) ? data : []).filter(
-          (u: any) => String(u?.role ?? "").toLowerCase() === "user"
-        )
-      );
-    } catch (e: any) {
-      setErr(getApiErrorMessage(e));
-      if (e?.response?.status === 401) router.replace("/auth/Signin");
-    } finally {
-      setLoading(false);
-    }
+  /* =======================
+     ✅ TOAST (SINGLE, seperti contoh)
+  ======================= */
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimer = useRef<number | null>(null);
+
+  function showToast(message: string) {
+    setToastMsg(message);
+    setToastOpen(true);
+
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToastOpen(false);
+    }, 3500);
   }
 
   useEffect(() => {
-    load();
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
   }, []);
 
-  async function onApprove(id: number) {
+  const mapStatus = (u: BackendUser): "Approve" | "Pending" => {
+    if (u.is_approved === true || u.is_approved === 1) return "Approve";
+    if (u.is_approved === false || u.is_approved === 0) return "Pending";
+
+    const s = String(u.status ?? "").toLowerCase();
+    if (s === "approved" || s === "approve") return "Approve";
+    if (s === "pending") return "Pending";
+
+    return "Pending";
+  };
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      await approveUser(id);
-      await load();
-      showNotice({ type: "success", message: "User berhasil di-approve." });
+      const res = await axiosAuth.get("/api/super-admin/users");
+
+      const raw: BackendUser[] = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+
+      const onlyUsers = raw.filter((u) => {
+        const r = String(u.role ?? "").toLowerCase();
+        return r === "user" || !u.role;
+      });
+
+      const mapped: UiUser[] = onlyUsers.map((u) => ({
+        id: u.id,
+        name: u.name ?? "-",
+        username: u.username ?? "-",
+        email: u.email ?? "-",
+        role: String(u.role ?? "user"),
+        status: mapStatus(u),
+      }));
+
+      setUsers(mapped);
     } catch (e: any) {
-      showNotice({ type: "error", message: getApiErrorMessage(e) });
-    }
-  }
-
-  async function onCreate() {
-    try {
-      setSaving(true);
-
-      if (!form.name.trim() || !form.username.trim() || !form.password) {
-        showNotice({
-          type: "error",
-          message: "Name, Username, dan Password wajib diisi.",
-        });
+      const status = e?.response?.status;
+      if (status === 401) {
+        localStorage.removeItem("token");
+        router.replace("/auth/Signin");
         return;
       }
 
-      await createUser(
-        {
-          name: form.name.trim(),
-          username: form.username.trim(),
-          email: form.email.trim() || undefined,
-          password: form.password,
-        },
-        "super_admin"
+      const msg =
+        getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
+      setError(msg);
+      showToast(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API_BASE_URL]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return users;
+
+    return users.filter((u) => {
+      return (
+        String(u.id).toLowerCase().includes(q) ||
+        u.name.toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.status.toLowerCase().includes(q)
+      );
+    });
+  }, [search, users]);
+
+  const StatusBadge = ({ status }: { status: "Approve" | "Pending" }) => {
+    const isApproved = status === "Approve";
+    return (
+      <span
+        className={[
+          "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium",
+          isApproved
+            ? "bg-green-100 text-green-700"
+            : "bg-orange-100 text-orange-700",
+        ].join(" ")}
+      >
+        {status}
+      </span>
+    );
+  };
+
+  const formatId = (id: number | string) => {
+    const n = Number(id);
+    if (Number.isFinite(n)) return `RQ${String(n).padStart(3, "0")}`;
+    return String(id);
+  };
+
+  // ====== APPROVE MODAL handlers (sudah ada) ======
+  const openApproveModal = (user: UiUser) => {
+    setSelectedUser(user);
+    setIsModalOpen(true);
+    setError(null);
+  };
+
+  const closeApproveModal = () => {
+    if (confirmLoading) return;
+    setIsModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  const confirmApprove = async () => {
+    if (!selectedUser) return;
+
+    setConfirmLoading(true);
+    setError(null);
+
+    try {
+      await axiosAuth.post(`/api/approve-user/${selectedUser.id}`);
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id ? { ...u, status: "Approve" } : u
+        )
       );
 
-      setOpenAdd(false);
-      setShowPassword(false);
-      setForm({ name: "", username: "", email: "", password: "" });
+      showToast("User approved successfully.");
 
-      await load();
-      showNotice({ type: "success", message: "User berhasil dibuat." });
+      setIsModalOpen(false);
+      setSelectedUser(null);
     } catch (e: any) {
-      showNotice({ type: "error", message: getApiErrorMessage(e) });
+      const msg = getApiErrorMessage(e) || "Gagal approve user. Coba lagi.";
+      setError(msg);
+      showToast(msg);
     } finally {
-      setSaving(false);
+      setConfirmLoading(false);
+    }
+  };
+
+  /* =========================================================
+     ✅ ADD USER (via backend /api/register)
+     ========================================================= */
+  const [openAdd, setOpenAdd] = useState(false);
+  const [savingAdd, setSavingAdd] = useState(false);
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+  });
+
+  function openAddModal() {
+    setOpenAdd(true);
+    setError(null);
+  }
+
+  function closeAddModal() {
+    if (savingAdd) return;
+    setOpenAdd(false);
+    setShowAddPassword(false);
+    setSavingAdd(false);
+    setAddForm({ name: "", username: "", email: "", password: "" });
+  }
+
+  async function createUserPending(payload: {
+    name: string;
+    username: string;
+    email?: string;
+    password: string;
+  }) {
+    const res = await axiosAuth.post("/api/register", payload);
+    return res.data;
+  }
+
+  async function approveUserById(userId: number | string) {
+    await axiosAuth.post(`/api/approve-user/${userId}`);
+  }
+
+  async function createUserApproved(payload: {
+    name: string;
+    username: string;
+    email?: string;
+    password: string;
+  }) {
+    const data = await createUserPending(payload);
+
+    const createdId = (data as any)?.id ?? (data as any)?.data?.id ?? null;
+
+    if (createdId != null) {
+      await approveUserById(createdId);
+      return data;
+    }
+
+    const res = await axiosAuth.get("/api/super-admin/users");
+
+    const raw: BackendUser[] = Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res.data?.data)
+      ? res.data.data
+      : [];
+
+    const match = raw.find((u) => {
+      const un = String(u.username ?? "").toLowerCase();
+      const em = String(u.email ?? "").toLowerCase();
+      return (
+        un === payload.username.toLowerCase() ||
+        (!!payload.email && em === payload.email.toLowerCase())
+      );
+    });
+
+    if (match?.id != null) {
+      await approveUserById(match.id);
+    }
+
+    return data;
+  }
+
+  async function onConfirmAddUser() {
+    if (!addForm.name.trim() || !addForm.username.trim() || !addForm.password) {
+      const msg = "Name, Username, dan Password wajib diisi.";
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+
+    try {
+      setSavingAdd(true);
+      setError(null);
+
+      await createUserApproved({
+        name: addForm.name.trim(),
+        username: addForm.username.trim(),
+        email: addForm.email.trim() || undefined,
+        password: addForm.password,
+      });
+
+      showToast("User added successfully.");
+
+      closeAddModal();
+      await fetchUsers();
+    } catch (e: any) {
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      showToast(msg);
+    } finally {
+      setSavingAdd(false);
     }
   }
 
-  function openEditModal(u: User) {
+  /* =========================================================
+     ✅ EDIT USER (backend: PUT /api/users/{id})
+     ========================================================= */
+  const MASK_PASSWORD = "••••••••";
+
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editing, setEditing] = useState<UiUser | null>(null);
+  const [passwordChanged, setPasswordChanged] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: MASK_PASSWORD,
+  });
+
+  function openEditModal(u: UiUser) {
     setEditing(u);
+    setPasswordChanged(false);
     setShowEditPassword(false);
     setOpenEdit(true);
+    setError(null);
   }
 
-  // auto isi data saat modal edit dibuka
+  function closeEditModal() {
+    if (editSaving) return;
+    setOpenEdit(false);
+    setEditing(null);
+    setPasswordChanged(false);
+    setShowEditPassword(false);
+    setEditSaving(false);
+    setEditForm({ name: "", username: "", email: "", password: MASK_PASSWORD });
+  }
+
   useEffect(() => {
     if (!openEdit || !editing) return;
     setEditForm({
       name: String(editing.name ?? ""),
       username: String(editing.username ?? ""),
       email: String(editing.email ?? ""),
-      password: "", // ✅ kosongkan (optional)
+      password: MASK_PASSWORD,
     });
   }, [openEdit, editing]);
 
-  async function onUpdate() {
+  async function updateUser(userId: number | string, payload: any) {
+    const res = await axiosAuth.put(`/api/users/${userId}`, payload);
+    return res.data;
+  }
+
+  async function onConfirmEditUser() {
     if (!editing) return;
 
     if (!editForm.name.trim() || !editForm.username.trim()) {
-      showNotice({ type: "error", message: "Name dan Username wajib diisi." });
+      const msg = "Name dan Username wajib diisi.";
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+
+    if (!token) {
+      const msg =
+        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
+      setError(msg);
+      showToast(msg);
       return;
     }
 
     try {
       setEditSaving(true);
+      setError(null);
 
       const payload: any = {
         name: editForm.name.trim(),
         username: editForm.username.trim(),
-        email: editForm.email?.trim() || undefined,
+        email: editForm.email.trim() || undefined,
       };
 
-      // ✅ kirim password hanya jika diisi (optional)
-      if (editForm.password.trim()) {
+      if (
+        passwordChanged &&
+        editForm.password.trim() &&
+        editForm.password !== MASK_PASSWORD
+      ) {
         payload.password = editForm.password.trim();
       }
 
       await updateUser(editing.id, payload);
-      await load();
 
-      setOpenEdit(false);
-      setEditing(null);
+      showToast("User updated successfully.");
 
-      showNotice({ type: "success", message: "User berhasil diperbarui." });
+      closeEditModal();
+      await fetchUsers();
     } catch (e: any) {
-      showNotice({ type: "error", message: getApiErrorMessage(e) });
-      if (e?.response?.status === 401) router.replace("/auth/Signin");
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      showToast(msg);
     } finally {
       setEditSaving(false);
     }
   }
 
-  function openDeleteModal(u: User) {
+  /* =========================================================
+     ✅ DELETE USER (backend: DELETE /api/users/{id})
+     ========================================================= */
+  const [openDelete, setOpenDelete] = useState(false);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleting, setDeleting] = useState<UiUser | null>(null);
+
+  function openDeleteModal(u: UiUser) {
     setDeleting(u);
     setOpenDelete(true);
+    setError(null);
   }
 
-  async function onDelete() {
+  function closeDeleteModal() {
+    if (deleteSaving) return;
+    setOpenDelete(false);
+    setDeleting(null);
+    setDeleteSaving(false);
+  }
+
+  async function deleteUser(userId: number | string) {
+    const res = await axiosAuth.delete(`/api/users/${userId}`);
+    return res.data;
+  }
+
+  async function onConfirmDeleteUser() {
     if (!deleting) return;
+
+    if (!token) {
+      const msg =
+        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
+      setError(msg);
+      showToast(msg);
+      return;
+    }
 
     try {
       setDeleteSaving(true);
+      setError(null);
+
       await deleteUser(deleting.id);
-      await load();
 
-      setOpenDelete(false);
-      setDeleting(null);
+      showToast("User deleted successfully.");
 
-      showNotice({ type: "success", message: "User berhasil dihapus." });
+      closeDeleteModal();
+      await fetchUsers();
     } catch (e: any) {
-      showNotice({ type: "error", message: getApiErrorMessage(e) });
-      if (e?.response?.status === 401) router.replace("/auth/Signin");
+      const msg = getApiErrorMessage(e);
+      setError(msg);
+      showToast(msg);
     } finally {
       setDeleteSaving(false);
     }
   }
 
-  function openApproveModal(u: User) {
-    setApproving(u);
-    setOpenApprove(true);
-  }
-
-  async function onApproveConfirm() {
-    if (!approving) return;
-    try {
-      setApproveSaving(true);
-      await onApprove(approving.id);
-      setOpenApprove(false);
-      setApproving(null);
-    } finally {
-      setApproveSaving(false);
-    }
-  }
-
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
-      {/* ✅ TOAST / POPUP (gaya sama seperti Admin) */}
-      {notice && (
-        <div className="fixed top-4 right-4 z-[9999] space-y-2">
-          <div
-            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${
-              notice.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                    notice.type === "success" ? "bg-green-500" : "bg-red-500"
-                  }`}
-                />
-                <p
-                  className={`text-sm font-medium ${
-                    notice.type === "success" ? "text-green-700" : "text-red-700"
-                  }`}
-                >
-                  {notice.message}
-                </p>
-              </div>
+      {/* TOAST (kanan atas) */}
+      {toastOpen && (
+        <div className="fixed top-6 right-6 z-[9999]">
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 shadow-md min-w-[320px] max-w-[520px]">
+            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <p className="text-sm font-medium text-green-800">{toastMsg}</p>
 
-              <button
-                type="button"
-                onClick={() => setNotice(null)}
-                className="text-gray-400 hover:text-gray-700"
-                aria-label="Close notification"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => setToastOpen(false)}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-green-100"
+              aria-label="Close"
+              title="Close"
+            >
+              <X size={16} className="text-green-800" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-4 px-8 pt-7">
+      {/* Header: Users + Search */}
+      <div className="flex items-center justify-between gap-4 px-6 pt-6">
         <h1 className="text-2xl font-semibold text-gray-900">Users</h1>
 
-        <div className="w-full max-w-[320px] relative">
+        <div className="w-full max-w-[280px] relative">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
             <Search className="h-4 w-4" />
           </span>
           <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search"
             className="pl-9 h-10 bg-white"
           />
         </div>
       </div>
 
-      <div className="mx-8 mt-5 border-b border-gray-200/60" />
+      <div className="mx-6 mt-4 border-b border-gray-200/60" />
 
-      {/* error */}
-      {err && (
-        <div className="px-8 pt-4">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {err}
-          </div>
-        </div>
-      )}
+      {/* Card + Table */}
+      <div className="px-6 pt-6">
+        <div className="w-full max-w-[1200px] rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="px-6 pt-5 pb-2 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-gray-900">List User</h2>
 
-      {/* Card table */}
-      <div className="px-8 pt-6">
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="text-sm font-semibold text-gray-900">List User</div>
-
-            <Button
-              type="button"
-              onClick={() => setOpenAdd(true)}
-              className="h-9 rounded-lg bg-blue-600 hover:bg-blue-700"
-            >
-              + Add User
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={openAddModal}
+                className="h-9 rounded-lg bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+            </div>
           </div>
 
-          <div className="px-6 pb-6">
+          <div className="px-4 pb-5">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
-                    <th className="py-3 pr-3">Id</th>
-                    <th className="py-3 pr-3">Nama</th>
-                    <th className="py-3 pr-3">Username</th>
-                    <th className="py-3 pr-3">Email</th>
-                    <th className="py-3 pr-3">Status</th>
-                    <th className="py-3 pr-3 text-center">Actions</th>
+                  <tr className="text-left text-sm text-gray-600">
+                    <th className="py-3 px-3 font-medium">Id</th>
+                    <th className="py-3 px-3 font-medium">Nama</th>
+                    <th className="py-3 px-3 font-medium">Username</th>
+                    <th className="py-3 px-3 font-medium min-w-[260px]">
+                      Email
+                    </th>
+                    <th className="py-3 px-3 font-medium">Status</th>
+                    <th className="py-3 px-3 font-medium text-center">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="text-sm text-gray-800">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-500">
+                      <td className="py-6 px-3 text-gray-500" colSpan={6}>
                         Loading...
                       </td>
                     </tr>
                   ) : filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-500">
-                        Data not found
+                      <td className="py-6 px-3 text-gray-500" colSpan={6}>
+                        Data not found.
                       </td>
                     </tr>
                   ) : (
                     filtered.map((u) => {
-                      const isOk = approved((u as any).is_approved);
+                      const isOk = u.status === "Approve" || approved(u.status);
                       return (
-                        <tr key={u.id} className="border-b last:border-b-0">
-                          <td className="py-3 pr-3">{`RQ${String(u.id).padStart(
-                            3,
-                            "0"
-                          )}`}</td>
-                          <td className="py-3 pr-3">{u.name}</td>
-                          <td className="py-3 pr-3">{u.username || "-"}</td>
-                          <td className="py-3 pr-3">{u.email || "-"}</td>
-
-                          <td className="py-3 pr-3">
-                            {isOk ? (
-                              <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                                Approve
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
-                                Pending
-                              </span>
-                            )}
+                        <tr
+                          key={String(u.id)}
+                          className="border-t border-gray-100"
+                        >
+                          <td className="py-3 px-3">{formatId(u.id)}</td>
+                          <td className="py-3 px-3">{u.name}</td>
+                          <td className="py-3 px-3">{u.username}</td>
+                          <td className="py-3 px-3 min-w-[260px]">{u.email}</td>
+                          <td className="py-3 px-3">
+                            <StatusBadge status={u.status} />
                           </td>
 
-                          <td className="py-3 pr-3">
+                          <td className="py-3 px-3">
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 type="button"
@@ -412,14 +635,18 @@ export default function SuperAdminUsersPage() {
 
                               <button
                                 type="button"
-                                disabled={isOk}
+                                disabled={u.status === "Approve"}
                                 className={[
                                   "h-7 w-7 rounded-md flex items-center justify-center",
-                                  isOk
+                                  u.status === "Approve"
                                     ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                                     : "bg-green-600 hover:bg-green-700 text-white",
                                 ].join(" ")}
-                                title={isOk ? "Sudah approved" : "Approve"}
+                                title={
+                                  u.status === "Approve"
+                                    ? "Sudah approve"
+                                    : "Approve user"
+                                }
                                 onClick={() => openApproveModal(u)}
                               >
                                 <Check className="h-4 w-4" />
@@ -433,15 +660,27 @@ export default function SuperAdminUsersPage() {
                 </tbody>
               </table>
             </div>
+
+            {!token && !loading && (
+              <p className="mt-4 text-sm text-gray-500">
+                Token belum ditemukan. Pastikan kamu sudah login dan token
+                tersimpan di localStorage dengan key{" "}
+                <span className="font-medium">"token"</span>.
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Modal Add User */}
+      <div className="h-12" />
+
+      {/* =========================================================
+          ✅ MODAL ADD USER
+         ========================================================= */}
       {openAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[560px] rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between px-6 pt-6">
+          <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between px-8 pt-7">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Add user</h2>
                 <p className="mt-1 text-sm text-gray-500">
@@ -450,12 +689,7 @@ export default function SuperAdminUsersPage() {
               </div>
 
               <button
-                type="button"
-                onClick={() => {
-                  setOpenAdd(false);
-                  setShowPassword(false);
-                  setForm({ name: "", username: "", email: "", password: "" });
-                }}
+                onClick={closeAddModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
               >
@@ -463,18 +697,18 @@ export default function SuperAdminUsersPage() {
               </button>
             </div>
 
-            <div className="px-6 pb-6 pt-4 space-y-4">
+            <div className="px-8 pb-6 pt-5 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-900">
                   Name <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  value={form.name}
+                  value={addForm.name}
                   onChange={(e) =>
-                    setForm((s) => ({ ...s, name: e.target.value }))
+                    setAddForm((s) => ({ ...s, name: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Name"
+                  placeholder="e.g. Cipta Azzahra"
                 />
               </div>
 
@@ -483,12 +717,12 @@ export default function SuperAdminUsersPage() {
                   Username <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  value={form.username}
+                  value={addForm.username}
                   onChange={(e) =>
-                    setForm((s) => ({ ...s, username: e.target.value }))
+                    setAddForm((s) => ({ ...s, username: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Username"
+                  placeholder="e.g. ciptaazzahra"
                 />
               </div>
 
@@ -497,12 +731,12 @@ export default function SuperAdminUsersPage() {
                   Email (optional)
                 </label>
                 <Input
-                  value={form.email}
+                  value={addForm.email}
                   onChange={(e) =>
-                    setForm((s) => ({ ...s, email: e.target.value }))
+                    setAddForm((s) => ({ ...s, email: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Email"
+                  placeholder="e.g. ciptaazzahra@gmail.com"
                   type="email"
                 />
               </div>
@@ -514,22 +748,23 @@ export default function SuperAdminUsersPage() {
 
                 <div className="relative mt-2">
                   <Input
-                    value={form.password}
+                    value={addForm.password}
                     onChange={(e) =>
-                      setForm((s) => ({ ...s, password: e.target.value }))
+                      setAddForm((s) => ({ ...s, password: e.target.value }))
                     }
                     className="h-10 pr-10"
-                    placeholder="Password"
-                    type={showPassword ? "text" : "password"}
+                    type={showAddPassword ? "text" : "password"}
                   />
 
                   <button
                     type="button"
-                    onClick={() => setShowPassword((v) => !v)}
+                    onClick={() => setShowAddPassword((v) => !v)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:text-gray-700"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showAddPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showPassword ? (
+                    {showAddPassword ? (
                       <EyeOff className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
@@ -538,28 +773,22 @@ export default function SuperAdminUsersPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-3">
+              <div className="pt-3 flex items-center justify-center gap-4">
                 <Button
-                  type="button"
                   variant="outline"
-                  className="h-10 w-[140px]"
-                  onClick={() => {
-                    setOpenAdd(false);
-                    setShowPassword(false);
-                    setForm({ name: "", username: "", email: "", password: "" });
-                  }}
-                  disabled={saving}
+                  className="h-10 w-[260px]"
+                  onClick={closeAddModal}
+                  disabled={savingAdd}
                 >
                   Cancel
                 </Button>
 
                 <Button
-                  type="button"
-                  className="h-10 w-[140px] bg-blue-600 hover:bg-blue-700"
-                  onClick={onCreate}
-                  disabled={saving}
+                  className="h-10 w-[260px] bg-blue-600 hover:bg-blue-700"
+                  onClick={onConfirmAddUser}
+                  disabled={savingAdd}
                 >
-                  {saving ? "Saving..." : "Create"}
+                  {savingAdd ? "Saving..." : "Confirm"}
                 </Button>
               </div>
             </div>
@@ -567,24 +796,22 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {/* Modal Edit User */}
-      {openEdit && (
+      {/* =========================================================
+          ✅ MODAL EDIT USER
+         ========================================================= */}
+      {openEdit && editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[560px] rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between px-6 pt-6">
+          <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between px-8 pt-7">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Edit user</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Update the user's information below
+                  Update the user account details below
                 </p>
               </div>
 
               <button
-                type="button"
-                onClick={() => {
-                  setOpenEdit(false);
-                  setEditing(null);
-                }}
+                onClick={closeEditModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
               >
@@ -592,7 +819,7 @@ export default function SuperAdminUsersPage() {
               </button>
             </div>
 
-            <div className="px-6 pb-6 pt-4 space-y-4">
+            <div className="px-8 pb-6 pt-5 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-900">
                   Name <span className="text-red-500">*</span>
@@ -603,7 +830,6 @@ export default function SuperAdminUsersPage() {
                     setEditForm((s) => ({ ...s, name: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Name"
                 />
               </div>
 
@@ -617,38 +843,32 @@ export default function SuperAdminUsersPage() {
                     setEditForm((s) => ({ ...s, username: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Username"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-900">
-                  Email <span className="text-red-500">*</span>
-                </label>
+                <label className="text-sm font-medium text-gray-900">Email</label>
                 <Input
                   value={editForm.email}
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, email: e.target.value }))
                   }
                   className="h-10 mt-2"
-                  placeholder="Email"
                   type="email"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-900">
-                  Password <span className="text-gray-400">(optional)</span>
-                </label>
+                <label className="text-sm font-medium text-gray-900">Password</label>
 
                 <div className="relative mt-2">
                   <Input
                     value={editForm.password}
-                    onChange={(e) =>
-                      setEditForm((s) => ({ ...s, password: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setPasswordChanged(true);
+                      setEditForm((s) => ({ ...s, password: e.target.value }));
+                    }}
                     className="h-10 pr-10"
-                    placeholder="Isi jika ingin ganti password"
                     type={showEditPassword ? "text" : "password"}
                   />
 
@@ -667,26 +887,25 @@ export default function SuperAdminUsersPage() {
                     )}
                   </button>
                 </div>
+
+                <p className="mt-2 text-xs text-gray-500">
+                  (Opsional) Ubah password hanya jika kamu mengetik password baru.
+                </p>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-3">
+              <div className="pt-3 flex items-center justify-center gap-4">
                 <Button
-                  type="button"
                   variant="outline"
-                  className="h-10 w-[140px]"
-                  onClick={() => {
-                    setOpenEdit(false);
-                    setEditing(null);
-                  }}
+                  className="h-10 w-[260px]"
+                  onClick={closeEditModal}
                   disabled={editSaving}
                 >
                   Cancel
                 </Button>
 
                 <Button
-                  type="button"
-                  className="h-10 w-[140px] bg-blue-600 hover:bg-blue-700"
-                  onClick={onUpdate}
+                  className="h-10 w-[260px] bg-blue-600 hover:bg-blue-700"
+                  onClick={onConfirmEditUser}
                   disabled={editSaving}
                 >
                   {editSaving ? "Saving..." : "Confirm"}
@@ -697,7 +916,9 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {/* Modal Delete User */}
+      {/* =========================================================
+          ✅ POPUP DELETE USER
+         ========================================================= */}
       {openDelete && deleting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl">
@@ -712,18 +933,14 @@ export default function SuperAdminUsersPage() {
                     Delete user
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Are you sure you want to delete this user? This action
-                    cannot be undone.
+                    Are you sure you want to delete this user? This action cannot
+                    be undone.
                   </p>
                 </div>
               </div>
 
               <button
-                type="button"
-                onClick={() => {
-                  setOpenDelete(false);
-                  setDeleting(null);
-                }}
+                onClick={closeDeleteModal}
                 className="rounded-md p-1 text-gray-400 hover:text-gray-700"
                 aria-label="Close"
               >
@@ -744,22 +961,17 @@ export default function SuperAdminUsersPage() {
 
             <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
               <Button
-                type="button"
                 variant="outline"
                 className="h-10 w-[140px]"
-                onClick={() => {
-                  setOpenDelete(false);
-                  setDeleting(null);
-                }}
+                onClick={closeDeleteModal}
                 disabled={deleteSaving}
               >
                 Cancel
               </Button>
 
               <Button
-                type="button"
                 className="h-10 w-[140px] bg-red-600 hover:bg-red-700"
-                onClick={onDelete}
+                onClick={onConfirmDeleteUser}
                 disabled={deleteSaving}
               >
                 {deleteSaving ? "Deleting..." : "Delete"}
@@ -769,77 +981,73 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {/* Modal Approve User */}
-      {openApprove && approving && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between px-6 pt-6">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center">
-                  <Check className="h-5 w-5 text-green-600" />
-                </div>
+      {/* ===== MODAL Approve (punyamu) ===== */}
+      {isModalOpen && selectedUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeApproveModal}
+          />
 
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Approve User
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Are you sure you want to approve this user? They will be
-                    granted access to the system.
-                  </p>
-                </div>
-              </div>
+          <div className="relative z-10 w-[92%] max-w-md rounded-xl bg-white shadow-xl">
+            <button
+              type="button"
+              onClick={closeApproveModal}
+              className="absolute right-3 top-3 rounded-md p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50"
+              disabled={confirmLoading}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenApprove(false);
-                  setApproving(null);
-                }}
-                className="rounded-md p-1 text-gray-400 hover:text-gray-700"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="px-6 pt-4">
-              <div className="rounded-xl bg-gray-50 px-4 py-3">
-                <div className="text-sm font-semibold text-gray-900">
-                  {approving.name}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {approving.email || "-"}
+            <div className="p-6">
+              <div className="mb-4">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                  <div className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="px-6 pb-6 pt-6 flex items-center justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 w-[140px]"
-                onClick={() => {
-                  setOpenApprove(false);
-                  setApproving(null);
-                }}
-                disabled={approveSaving}
-              >
-                Cancel
-              </Button>
+              <h3 className="text-base font-semibold text-gray-900">Approve User</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Are you sure you want to approve this user? They will be granted
+                access to the system.
+              </p>
 
-              <Button
-                type="button"
-                className="h-10 w-[140px] bg-green-600 hover:bg-green-700"
-                onClick={onApproveConfirm}
-                disabled={approveSaving}
-              >
-                {approveSaving ? "Approving..." : "Confirm"}
-              </Button>
+              <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                <div className="font-medium">{selectedUser.name}</div>
+                <div className="text-gray-600">{selectedUser.email}</div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeApproveModal}
+                  disabled={confirmLoading}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={confirmApprove}
+                  disabled={confirmLoading}
+                  className="bg-green-500 hover:bg-green-600"
+                >
+                  {confirmLoading ? "Confirming..." : "Confirm"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
+      {/* ===== END MODAL Approve ===== */}
     </div>
   );
 }
