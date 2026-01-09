@@ -12,17 +12,26 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 
-type BackendTarget = {
-  id: number | string;
-  bulan?: string | null;
-  target_perbulan?: number | string | null;
-  tahun?: number | string | null;
+type BackendChartResponse = {
+  message?: string | null;
+  tahun?: string | number | null;
+  data?: {
+    labels?: string[] | null;
+    biayaPerBulan?: Array<number | string> | null;
+    targetPerBulan?: Array<number | string> | null;
+  } | null;
+  summary?: {
+    total_biaya?: number | string | null;
+    total_target?: number | string | null;
+    selisih?: number | string | null;
+    persentase_tercapai?: number | string | null;
+  } | null;
 };
 
 type Point = {
   month: string; // "Jan"..."Dec"
-  a: number; // target
-  b: number; // variasi (biar 2 garis)
+  targetBulanan: number;
+  biayaBulanan: number;
 };
 
 function monthShort(bulan: string) {
@@ -97,54 +106,34 @@ export function RevenuePerformanceChart() {
         setLoading(true);
         setErr(null);
 
-        // ambil semua target
-        const res = await axiosAuth.get("/api/target");
+        // ambil data biaya vs target
+        const res = await axiosAuth.get("/api/analytics/chart-biaya-vs-target", {
+          params: { tahun: year },
+        });
 
-        const raw: BackendTarget[] = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-          ? res.data
-          : [];
-
-        const years = Array.from(
-          new Set(raw.map((r) => String(r.tahun ?? "")).filter(Boolean))
-        ).sort();
+        const payload: BackendChartResponse = res.data ?? {};
+        const labels = payload.data?.labels ?? [];
+        const biayaPerBulan = payload.data?.biayaPerBulan ?? [];
+        const targetPerBulan = payload.data?.targetPerBulan ?? [];
+        const responseYear = String(payload.tahun ?? "");
+        const years = responseYear ? [responseYear] : [];
+        const fallbackYears = ["2025", "2026", "2027"];
+        const mergedYears = Array.from(new Set([...fallbackYears, ...years])).sort();
 
         // set opsi tahun & default year jika tahun sekarang tidak ada
         if (alive) {
-          setAvailableYears(years.length ? years : ["2025", "2026", "2027"]);
-          if (years.length && !years.includes(year)) {
-            setYear(years[years.length - 1]); // terbesar
+          setAvailableYears(mergedYears);
+          if (!mergedYears.includes(year)) {
+            setYear(mergedYears[mergedYears.length - 1]); // terbesar
           }
         }
 
         // filter data sesuai year terpilih
-        const byYear = raw.filter((r) => String(r.tahun ?? "") === String(year));
-
-        const mapped: Point[] = byYear.map((r) => {
-          const a = Number(r.target_perbulan ?? 0);
-          return {
-            month: monthShort(String(r.bulan ?? "")),
-            a,
-            b: Math.round(a * 0.85),
-          };
-        });
-
-        const order = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        mapped.sort((x, y) => order.indexOf(x.month) - order.indexOf(y.month));
+        const mapped: Point[] = labels.map((label, index) => ({
+          month: monthShort(String(label ?? "")),
+          targetBulanan: Number(targetPerBulan[index] ?? 0),
+          biayaBulanan: Number(biayaPerBulan[index] ?? 0),
+        }));
 
         if (!alive) return;
         setData(mapped);
@@ -233,14 +222,14 @@ export function RevenuePerformanceChart() {
 
                 <Line
                   type="monotone"
-                  dataKey="a"
+                  dataKey="targetBulanan"
                   dot={false}
                   strokeWidth={2}
                   stroke="#E76E50"
                 />
                 <Line
                   type="monotone"
-                  dataKey="b"
+                  dataKey="biayaBulanan"
                   dot={false}
                   strokeWidth={2}
                   stroke="#78C1F3"
@@ -253,7 +242,7 @@ export function RevenuePerformanceChart() {
 
       <div className="p-4 pt-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-          Trending up by 5.2% this month
+          Trending up this month
           <TrendingUp size={16} className="text-gray-900" />
         </div>
         <p className="mt-1 text-xs text-gray-500">
