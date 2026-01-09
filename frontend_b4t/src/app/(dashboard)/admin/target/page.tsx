@@ -1,37 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { Pencil, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+type BackendTarget = {
+  id: number | string;
+  bulan?: string | null;
+  target_perbulan?: number | string | null;
+  tahun?: number | string | null;
+};
+
 type RevenueTarget = {
   id: number | string;
-  month: string; // "January", dst
-  target: number; // angka
-  year: string; // "2025"
+  month: string; // bulan
+  target: number; // target_perbulan
+  year: string; // tahun
 };
 
 function formatRupiah(v: number) {
   return `Rp ${v.toLocaleString("id-ID")}`;
 }
-
-/* =======================
-   DUMMY DATA
-======================= */
-const DUMMY_REVENUE_TARGETS: RevenueTarget[] = [
-  { id: 1, month: "January", target: 15000000, year: "2025" },
-  { id: 2, month: "February", target: 22500000, year: "2025" },
-  { id: 3, month: "March", target: 32000000, year: "2025" },
-  { id: 4, month: "April", target: 42500000, year: "2025" },
-  { id: 5, month: "May", target: 52000000, year: "2025" },
-  { id: 6, month: "June", target: 62000000, year: "2025" },
-  { id: 7, month: "July", target: 72000000, year: "2025" },
-  { id: 8, month: "August", target: 82000000, year: "2025" },
-  { id: 9, month: "September", target: 92000000, year: "2025" },
-  { id: 10, month: "October", target: 102000000, year: "2025" },
-  { id: 11, month: "November", target: 112000000, year: "2025" },
-  { id: 12, month: "December", target: 122000000, year: "2025" },
-];
 
 export default function TargetPage() {
   const [year, setYear] = useState("2025");
@@ -44,12 +34,25 @@ export default function TargetPage() {
   // modal edit
   const [openEdit, setOpenEdit] = useState(false);
   const [editing, setEditing] = useState<RevenueTarget | null>(null);
-  const [editTarget, setEditTarget] = useState<string>(""); // simpan angka string (digits)
+  const [editTarget, setEditTarget] = useState<string>("");
 
-  // toast notif (seperti gambar)
+  // toast
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const toastTimer = useRef<number | null>(null);
+
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  const axiosAuth = useMemo(() => {
+    return axios.create({
+      baseURL: API_BASE_URL,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+  }, [API_BASE_URL, token]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -67,42 +70,86 @@ export default function TargetPage() {
     };
   }, []);
 
+  function getApiErrorMessage(e: any) {
+    return (
+      e?.response?.data?.message ||
+      e?.response?.data?.error ||
+      e?.message ||
+      "Terjadi kesalahan"
+    );
+  }
+
+  // backend apiResource('target') => GET /api/target, PUT /api/target/{id}
+  const ENDPOINT_LIST = "/api/target";
+  const ENDPOINT_UPDATE = (id: number | string) => `/api/target/${id}`;
+
+  // fetch list dari backend (sekali, lalu filter by year di client)
   useEffect(() => {
     let alive = true;
 
-    async function load() {
+    async function fetchTargets() {
       try {
         setLoading(true);
         setErr(null);
 
-        const data = DUMMY_REVENUE_TARGETS.filter((item) => item.year === year);
+        const res = await axiosAuth.get(ENDPOINT_LIST);
+
+        const raw: BackendTarget[] = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+        const mapped: RevenueTarget[] = raw.map((r) => ({
+          id: r.id,
+          month: String(r.bulan ?? "-"),
+          target: Number(r.target_perbulan ?? 0),
+          year: String(r.tahun ?? ""),
+        }));
 
         if (!alive) return;
-        setItems(data);
+        setItems(mapped);
+
+        // kalau year yang dipilih belum ada di data, otomatis set ke tahun pertama yang ada
+        const years = Array.from(new Set(mapped.map((m) => m.year).filter(Boolean))).sort();
+        if (years.length > 0 && !years.includes(year)) {
+          setYear(years[years.length - 1]); // ambil yang terbesar
+        }
       } catch (e: any) {
         if (!alive) return;
-        setErr(e?.message ?? "Gagal memuat data");
+        setErr(getApiErrorMessage(e) || "Gagal memuat data target.");
       } finally {
         if (!alive) return;
         setLoading(false);
       }
     }
 
-    load();
+    fetchTargets();
     return () => {
       alive = false;
     };
-  }, [year]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API_BASE_URL]);
 
+  // filter tahun + search
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return items;
-    return items.filter((it) => it.month.toLowerCase().includes(s));
-  }, [items, q]);
+
+    const byYear = items.filter((it) => String(it.year) === String(year));
+    if (!s) return byYear;
+
+    return byYear.filter((it) => it.month.toLowerCase().includes(s));
+  }, [items, q, year]);
 
   const total = useMemo(() => {
     return filtered.reduce((acc, it) => acc + (Number(it.target) || 0), 0);
   }, [filtered]);
+
+  const yearOptions = useMemo(() => {
+    const ys = Array.from(new Set(items.map((i) => i.year).filter(Boolean))).sort();
+    // fallback default pilihan
+    return ys.length ? ys : ["2025", "2026", "2027"];
+  }, [items]);
 
   const onOpenEdit = (row: RevenueTarget) => {
     setEditing(row);
@@ -116,19 +163,35 @@ export default function TargetPage() {
     setEditTarget("");
   };
 
-  const onSubmitEdit = () => {
+  const onSubmitEdit = async () => {
     if (!editing) return;
 
-    const nextVal = Number(editTarget || 0);
+    try {
+      setErr(null);
 
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === editing.id ? { ...item, target: nextVal } : item
-      )
-    );
+      const nextVal = Number(editTarget || 0);
 
-    onCloseEdit();
-    showToast("Revenue target berhasil diperbarui.");
+      // PUT ke backend (field sesuai controller: target_perbulan)
+      const res = await axiosAuth.put(ENDPOINT_UPDATE(editing.id), {
+        target_perbulan: nextVal,
+      });
+
+      // update state agar UI langsung berubah
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === editing.id ? { ...item, target: nextVal } : item
+        )
+      );
+
+      onCloseEdit();
+
+      const msg = res.data?.message || "Target berhasil diperbarui.";
+      showToast(msg);
+    } catch (e: any) {
+      const msg = getApiErrorMessage(e) || "Gagal update target.";
+      setErr(msg);
+      showToast(msg);
+    }
   };
 
   return (
@@ -176,18 +239,18 @@ export default function TargetPage() {
         {/* Card table */}
         <div className="rounded-2xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between p-4">
-            <h2 className="font-medium text-gray-900">
-              Monthly Targets {year}
-            </h2>
+            <h2 className="font-medium text-gray-900">Monthly Targets {year}</h2>
 
             <select
               value={year}
               onChange={(e) => setYear(e.target.value)}
               className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
             >
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -267,13 +330,10 @@ export default function TargetPage() {
           </div>
         </div>
 
-        {/* =======================
-            MODAL EDIT (LIKE FIGMA)
-        ======================= */}
+        {/* MODAL EDIT */}
         {openEdit && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="w-full max-w-[640px] rounded-2xl bg-white shadow-xl border border-gray-200">
-              {/* Header */}
               <div className="flex items-start justify-between gap-4 px-6 pt-6">
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">
@@ -297,7 +357,6 @@ export default function TargetPage() {
                 </button>
               </div>
 
-              {/* Body */}
               <div className="px-6 pt-5 pb-6">
                 <label className="block text-sm font-medium text-gray-700">
                   Target Revenue (IDR) <span className="text-red-500">*</span>
@@ -318,7 +377,6 @@ export default function TargetPage() {
                   />
                 </div>
 
-                {/* Actions */}
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     onClick={onCloseEdit}
