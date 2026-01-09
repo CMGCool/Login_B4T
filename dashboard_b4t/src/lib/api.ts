@@ -2,6 +2,10 @@ const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").rep
 
 type FetchOpts = RequestInit & { path: string };
 
+interface ApiResponse<T = unknown> {
+  data: T;
+}
+
 function readCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([.$?*|{}()\[\]\\/+^])/g, "\\$1") + "=([^;]*)"));
@@ -49,3 +53,57 @@ async function safeMessage(res: Response) {
 export async function getCurrentUser() {
   return fetchWithAuth<{ user?: unknown; data?: unknown }>({ path: "/api/me" });
 }
+
+// Axios-like API wrapper untuk kompatibilitas dengan components
+export const api = {
+  baseURL: baseUrl,
+  
+  async get<T = unknown>(path: string, config?: { params?: Record<string, any> }): Promise<ApiResponse<T>> {
+    const url = new URL(path, baseUrl);
+    if (config?.params) {
+      Object.entries(config.params).forEach(([key, value]) => {
+        url.searchParams.append(key, String(value));
+      });
+    }
+    
+    const data = await fetchWithAuth<T>({
+      path: url.toString(),
+      method: "GET",
+    });
+    
+    return { data };
+  },
+
+  async post<T = unknown>(path: string, body?: unknown, config?: any): Promise<ApiResponse<T>> {
+    const data = await fetchWithAuth<T>({
+      path,
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+      headers: config?.headers || {},
+    });
+    
+    return { data };
+  },
+
+  async put<T = unknown>(path: string, body?: unknown, config?: any): Promise<ApiResponse<T>> {
+    const data = await fetchWithAuth<T>({
+      path,
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+      headers: config?.headers || {},
+    });
+    
+    return { data };
+  },
+
+  async delete<T = unknown>(path: string, config?: any): Promise<ApiResponse<T>> {
+    const data = await fetchWithAuth<T>({
+      path,
+      method: "DELETE",
+      headers: config?.headers || {},
+    });
+    
+    return { data };
+  },
+};
+

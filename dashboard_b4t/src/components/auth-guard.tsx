@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/api";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
   const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || "http://localhost:3000/login";
 
@@ -13,8 +14,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         await getCurrentUser();
+        setIsAuthed(true); // Authenticated, render children
       } catch (err) {
-        router.push(`${loginUrl}`);
+        setIsAuthed(false); // Not authenticated, redirect without rendering children
+        router.push(loginUrl);
       } finally {
         setChecking(false);
       }
@@ -27,6 +30,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         Memeriksa sesi...
       </div>
     );
+  }
+
+  // Hanya render children jika authenticated
+  if (!isAuthed) {
+    return null; // Jangan render apa-apa, redirect akan handle
   }
 
   return <>{children}</>;
