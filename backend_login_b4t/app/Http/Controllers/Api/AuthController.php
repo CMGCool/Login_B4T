@@ -82,7 +82,7 @@ class AuthController extends Controller
         // ])->cookie(
         //     'token',
         //     $token,
-        //     60 * 24 * 7,
+        //     60 * 24,
         //     '/',
         //     '.yourdomain.com', // shared subdomain
         //     true, // secure: HTTPS only
