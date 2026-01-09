@@ -54,7 +54,7 @@ class GoogleAuthController extends Controller
             ->cookie(
                 'token',
                 $token,
-                60 * 24 * 7,
+                60 * 24,
                 '/',
                 'localhost',
                 true,
@@ -68,7 +68,7 @@ class GoogleAuthController extends Controller
         //     ->cookie(
         //         'token',
         //         $token,
-        //         60 * 24 * 7,
+        //         60 * 24,
         //         '/',
         //         '.yourdomain.com',
         //         true,
