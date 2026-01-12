@@ -10,18 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardLayananController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-        $this->middleware(function ($request, $next) {
-            if (!in_array(auth()->user()->role, ['admin', 'super_admin'])) {
-                return response()->json([
-                    'message' => 'Anda tidak memiliki akses ke resource ini'
-                ], 403);
-            }
-            return $next($request);
-        });
-    }
+    // Middleware auth:sanctum dan role sudah ditangani di routes
 
     /**
      * Pie chart: komposisi layanan yang paling sering digunakan.
