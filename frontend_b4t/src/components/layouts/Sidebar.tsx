@@ -13,6 +13,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { FaServicestack } from "react-icons/fa";
 import { FaArrowTrendUp } from "react-icons/fa6";
+import { MdDashboard } from "react-icons/md";
 
 type MeResponse = {
   name?: string | null;
@@ -147,6 +148,14 @@ export default function Sidebar() {
         >
           <FaArrowTrendUp className="h-4 w-4" />
           Revenue Target
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("http://localhost:3001/dashboard/super-admin/dashboard")}
+          className={itemClass(isTarget)}
+        >
+          <MdDashboard className="h-4 w-4" />
+          Dashboard B4T
         </button>
       </nav>
 

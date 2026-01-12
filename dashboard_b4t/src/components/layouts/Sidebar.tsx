@@ -10,9 +10,8 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { FaServicestack } from "react-icons/fa";
-import { FaArrowTrendUp } from "react-icons/fa6";
 import { api } from "@/lib/api";
+import { GiBackForth } from "react-icons/gi";
 
 type MeResponse = {
   name?: string | null;
@@ -96,57 +95,18 @@ export default function Sidebar() {
           <LayoutGrid className="h-4 w-4" />
           Dashboard
         </button>
-
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/super-admin/users")}
-          className={itemClass(isUsers)}
-        >
-          <Users className="h-4 w-4" />
-          Users
-        </button>
-
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/super-admin/admin")}
-          className={itemClass(isAdmin)}
-        >
-          <UserCog className="h-4 w-4" />
-          Admin
-        </button>
-
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/super-admin/layanan")}
-          className={itemClass(isTesting)}
-        >
-          <FaServicestack className="h-4 w-4" />
-          Layanan
-        </button>
-
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/super-admin/target")}
-          className={itemClass(isTarget)}
-        >
-          <FaArrowTrendUp className="h-4 w-4" />
-          Revenue Target
-        </button>
       </nav>
 
       <div className="flex-1" />
 
-      {/* Settings */}
-      <div className="pt-6 border-t border-gray-100">
         <button
           type="button"
-          onClick={() => router.push("/dashboard/super-admin/settings")}
+          onClick={() => router.push("http://localhost:3000/super-admin/dashboard")}
           className={itemClass(isSettings)}
         >
-          <Settings className="h-4 w-4" />
-          Settings
+          <GiBackForth className="h-4 w-4" />
+          Kembali
         </button>
-      </div>
 
       {/* Profile + Logout */}
       <div className="mt-6 pt-4 border-t border-gray-100">
