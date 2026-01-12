@@ -10,11 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-    }
-
+    // Middleware auth:sanctum sudah ditangani di routes
+    
     /**
      * Get chart data: Perbandingan biaya layanan vs target per bulan
      * 
@@ -64,7 +61,7 @@ class AnalyticsController extends Controller
             ')
             ->where('tahun', $tahun)
             ->get();
-        
+
         // Convert to associative array untuk lookup yang reliable
         $targetPerBulan = [];
         foreach ($targetResults as $item) {

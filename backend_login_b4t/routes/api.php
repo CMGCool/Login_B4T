@@ -76,7 +76,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])
     ->get('/admin/dashboard-stats', [DashboardStatsController::class, 'adminStats']);
 
 // Endpoint untuk CRUD Layanan (hanya admin dan super_admin)
-Route::apiResource('layanan', LayananController::class);
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    Route::apiResource('layanan', LayananController::class);
+});
 
 // Endpoint untuk dashboard layanan (hanya admin dan super_admin)
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
@@ -85,7 +87,9 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
 });
 
 // Endpoint untuk CRUD target (hanya admin dan super_admin)
-Route::apiResource('target', TargetsController::class);
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    Route::apiResource('target', TargetsController::class);
+});
 
 // Endpoint untuk Analytics/Chart (admin dan super_admin)
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
