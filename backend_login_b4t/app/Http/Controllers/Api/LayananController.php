@@ -25,16 +25,6 @@ class LayananController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        return response()->json(['message' => 'Use POST to create'], 405);
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -59,19 +49,11 @@ class LayananController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  Layanan  $layanan
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Layanan $layanan)
     {
-        $layanan = Layanan::find($id);
-
-        if (!$layanan) {
-            return response()->json([
-                'message' => 'Layanan tidak ditemukan'
-            ], 404);
-        }
-
         return response()->json([
             'message' => 'Detail layanan berhasil diambil',
             'data' => $layanan
@@ -79,33 +61,14 @@ class LayananController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        return response()->json(['message' => 'Use PUT to update'], 405);
-    }
-
-    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  Layanan  $layanan
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Layanan $layanan)
     {
-        $layanan = Layanan::find($id);
-
-        if (!$layanan) {
-            return response()->json([
-                'message' => 'Layanan tidak ditemukan'
-            ], 404);
-        }
-
         $validated = $request->validate([
             'nama_layanan' => 'sometimes|string|max:255',
             'tanggal_layanan' => 'sometimes|date',
@@ -123,19 +86,11 @@ class LayananController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  Layanan  $layanan
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Layanan $layanan)
     {
-        $layanan = Layanan::find($id);
-
-        if (!$layanan) {
-            return response()->json([
-                'message' => 'Layanan tidak ditemukan'
-            ], 404);
-        }
-
         $layanan->delete();
 
         return response()->json([

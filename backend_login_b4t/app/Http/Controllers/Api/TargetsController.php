@@ -25,16 +25,6 @@ class TargetsController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        return response()->json(['message' => 'Use POST to create'], 405);
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -67,19 +57,11 @@ class TargetsController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  Target  $target
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Target $target)
     {
-        $target = Target::find($id);
-
-        if (!$target) {
-            return response()->json([
-                'message' => 'Target tidak ditemukan'
-            ], 404);
-        }
-
         return response()->json([
             'message' => 'Detail target berhasil diambil',
             'data' => $target
@@ -87,33 +69,14 @@ class TargetsController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        return response()->json(['message' => 'Use PUT to update'], 405);
-    }
-
-    /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  Target  $target
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Target $target)
     {
-        $target = Target::find($id);
-
-        if (!$target) {
-            return response()->json([
-                'message' => 'Target tidak ditemukan'
-            ], 404);
-        }
-
         $validated = $request->validate([
             'bulan' => 'sometimes|string|max:255',
             'target_perbulan' => 'sometimes|integer|min:0',
@@ -125,6 +88,21 @@ class TargetsController extends Controller
         return response()->json([
             'message' => 'Target berhasil diperbarui',
             'data' => $target
+        ], 200);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  Target  $target
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Target $target)
+    {
+        $target->delete();
+
+        return response()->json([
+            'message' => 'Target berhasil dihapus'
         ], 200);
     }
 }
