@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DashboardStatsController;
 use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\TargetsController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\LogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,4 +95,11 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
 // Endpoint untuk Analytics/Chart (admin dan super_admin)
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
     Route::get('/analytics/chart-biaya-vs-target', [AnalyticsController::class, 'chartBiayaVsTarget']);
+});
+
+// Endpoint untuk Logs (hanya super_admin)
+Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
+    Route::get('/logs', [LogController::class, 'index']);
+    Route::get('/logs/{id}', [LogController::class, 'show']);
+    Route::delete('/logs/cleanup', [LogController::class, 'cleanup']);
 });

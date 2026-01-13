@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\LogService;
 use Illuminate\Support\Facades\Hash;
 use App\Services\RecaptchaService;
 
@@ -71,6 +73,7 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        LogService::logLogin($user);
 
         return response()->json([
             'token' => $token,
@@ -95,6 +98,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $user = $request->user();
+
+        // ✅ Log logout action
+        LogService::create([
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'action' => 'logout',
+            'description' => "{$user->name} logged out",
+        ]);
+
         // Hapus token yang sedang digunakan
         $request->user()->currentAccessToken()->delete();
 

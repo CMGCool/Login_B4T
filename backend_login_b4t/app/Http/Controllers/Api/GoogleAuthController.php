@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use App\Services\LogService;
 
 class GoogleAuthController extends Controller
 {
@@ -48,6 +49,7 @@ class GoogleAuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        LogService::logLogin($user);
 
         // DEV VERSION (uncomment saat develop):
         return redirect("http://localhost:3000/sso?token=$token&role={$user->role}")
