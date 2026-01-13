@@ -94,22 +94,31 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        if ($request->user()) {
-            $request->user()->currentAccessToken()?->delete();
-        }
+        $user = $request->user();
+
+        // ✅ Log logout action
+        LogService::create([
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'action' => 'logout',
+            'description' => "{$user->name} logged out",
+        ]);
+
+        // Hapus token yang sedang digunakan
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'message' => 'Logout berhasil'
         ])->cookie(
             'token',
-            '',
-            -1,
-            '/',
-            null,
-            false,
-            true,
-            false,
-            'Lax'
+            '',             // Empty token
+            -1,             // Expired (hapus cookie)
+            '/',            // Path
+            'localhost',    // Domain
+            false,          // Secure: false (HTTP ok untuk dev)
+            true,           // HttpOnly: true
+            false,          // Raw
+            'lax'           // SameSite
         );
     }
     public function ssoFinalize(Request $request)
