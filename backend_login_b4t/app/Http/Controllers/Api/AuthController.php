@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\LogService;
 use Illuminate\Support\Facades\Hash;
 use App\Services\RecaptchaService;
 
@@ -71,6 +73,7 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        LogService::logLogin($user);
 
         return response()->json([
             'token' => $token,

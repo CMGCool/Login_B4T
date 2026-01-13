@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Layanan;
+use App\Services\LogService;
 use Illuminate\Http\Request;
 
 class LayananController extends Controller
@@ -40,6 +41,8 @@ class LayananController extends Controller
 
         $layanan = Layanan::create($validated);
 
+        LogService::logCrud('create', Layanan::class, $layanan);
+
         return response()->json([
             'message' => 'Layanan berhasil dibuat',
             'data' => $layanan
@@ -75,7 +78,12 @@ class LayananController extends Controller
             'pembayaran' => 'sometimes|integer|min:0',
         ]);
 
+        // Simpan data lama sebelum update
+        $oldData = $layanan->toArray();
+
         $layanan->update($validated);
+
+        LogService::logCrud('update', Layanan::class, $layanan, $oldData);
 
         return response()->json([
             'message' => 'Layanan berhasil diperbarui',
@@ -91,7 +99,12 @@ class LayananController extends Controller
      */
     public function destroy(Layanan $layanan)
     {
+        // Simpan data sebelum dihapus
+        $oldData = $layanan->toArray();
+
         $layanan->delete();
+
+        LogService::logCrud('delete', Layanan::class, $layanan, $oldData);
 
         return response()->json([
             'message' => 'Layanan berhasil dihapus'

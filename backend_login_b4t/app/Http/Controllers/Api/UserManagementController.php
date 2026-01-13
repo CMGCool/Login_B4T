@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\LogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -73,6 +74,14 @@ class UserManagementController extends Controller
         $user->is_approved = true;
         $user->save();
 
+        LogService::create([
+            'action' => 'approve',
+            'model' => 'User',
+            'model_id' => $user->id,
+            'description' => "Approved user {$user->username}",
+            'new_values' => ['is_approved' => true],
+        ]);
+
         return response()->json([
             'message' => 'User approved successfully',
             'user' => [
@@ -99,14 +108,16 @@ class UserManagementController extends Controller
             'password' => 'required|min:6',
         ]);
 
-        User::create([
+        $newUser = User::create([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'user',
-            'is_approved' => true, // langsung aktif
+            'is_approved' => true,
         ]);
+
+        LogService::logCrud('create', User::class, $newUser);
 
         return response()->json([
             'message' => 'User berhasil dibuat'
@@ -149,6 +160,8 @@ class UserManagementController extends Controller
             'password' => 'sometimes|min:6',
         ]);
 
+        $oldData = $user->toArray();
+
         if ($request->has('name')) {
             $user->name = $request->name;
         }
@@ -163,6 +176,8 @@ class UserManagementController extends Controller
         }
 
         $user->save();
+
+        LogService::logCrud('update', User::class, $user, $oldData);
 
         return response()->json([
             'message' => 'User berhasil diupdate',
@@ -192,6 +207,8 @@ class UserManagementController extends Controller
             ], 403);
         }
 
+        $oldData = $user->toArray();
+        LogService::logCrud('delete', User::class, $user, $oldData);
         $user->delete();
 
         return response()->json([

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Target;
 use Illuminate\Http\Request;
+use App\Services\LogService;
 
 class TargetsController extends Controller
 {
@@ -47,6 +48,16 @@ class TargetsController extends Controller
 
         Target::insert($validated);
 
+        // Log create action untuk setiap target
+        foreach ($validated as $data) {
+            LogService::create([
+                'action' => 'create',
+                'model' => 'Target',
+                'description' => 'Created new target',
+                'new_values' => $data,
+            ]);
+        }
+
         return response()->json([
             'message' => 'Target berhasil dibuat',
             'jumlah_data' => count($validated),
@@ -83,7 +94,12 @@ class TargetsController extends Controller
             'tahun' => 'sometimes|integer|min:0',
         ]);
 
+        // Simpan data lama sebelum update
+        $oldData = $target->toArray();
+
         $target->update($validated);
+
+        LogService::logCrud('update', Target::class, $target, $oldData);
 
         return response()->json([
             'message' => 'Target berhasil diperbarui',
@@ -99,7 +115,10 @@ class TargetsController extends Controller
      */
     public function destroy(Target $target)
     {
+        // Simpan data sebelum dihapus
+        $oldData = $target->toArray();
         $target->delete();
+        LogService::logCrud('delete', Target::class, $target, $oldData);
 
         return response()->json([
             'message' => 'Target berhasil dihapus'
