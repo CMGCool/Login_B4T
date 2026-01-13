@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,8 +42,7 @@ function approved(v: any) {
 export default function AdminUsersPage() {
   const router = useRouter();
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
 
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,17 +57,7 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UiUser | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token
-        ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
-        : { Accept: "application/json" },
-    });
-  }, [API_BASE_URL, token]);
 
   function getApiErrorMessage(e: any) {
     return (
@@ -118,13 +107,13 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      const res = await axiosAuth.get("/api/admin/users");
+      const res = await api.get<any>("/admin/users");
 
       const raw: BackendUser[] = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.data)
-        ? res.data.data
-        : [];
+          ? res.data.data
+          : [];
 
       const onlyUsers = raw.filter((u) => {
         const r = String(u.role ?? "").toLowerCase();
@@ -142,13 +131,6 @@ export default function AdminUsersPage() {
 
       setUsers(mapped);
     } catch (e: any) {
-      const status = e?.response?.status;
-      if (status === 401) {
-        localStorage.removeItem("token");
-        router.replace("/auth/Signin");
-        return;
-      }
-
       const msg =
         getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
       setError(msg);
@@ -160,8 +142,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL]);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -220,7 +201,7 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      await axiosAuth.post(`/api/approve-user/${selectedUser.id}`);
+      await api.post<any>(`/approve-user/${selectedUser.id}`);
 
       setUsers((prev) =>
         prev.map((u) =>
@@ -273,12 +254,12 @@ export default function AdminUsersPage() {
     email?: string;
     password: string;
   }) {
-    const res = await axiosAuth.post("/api/register", payload);
+    const res = await api.post<any>("/register", payload);
     return res.data;
   }
 
   async function approveUserById(userId: number | string) {
-    await axiosAuth.post(`/api/approve-user/${userId}`);
+    await api.post<any>(`/approve-user/${userId}`);
   }
 
   async function createUserApproved(payload: {
@@ -296,13 +277,13 @@ export default function AdminUsersPage() {
       return data;
     }
 
-    const res = await axiosAuth.get("/api/admin/users");
+    const res = await api.get<any>("/admin/users");
 
     const raw: BackendUser[] = Array.isArray(res.data)
       ? res.data
       : Array.isArray(res.data?.data)
-      ? res.data.data
-      : [];
+        ? res.data.data
+        : [];
 
     const match = raw.find((u) => {
       const un = String(u.username ?? "").toLowerCase();
@@ -399,7 +380,7 @@ export default function AdminUsersPage() {
   }, [openEdit, editing]);
 
   async function updateUser(userId: number | string, payload: any) {
-    const res = await axiosAuth.put(`/api/users/${userId}`, payload);
+    const res = await api.put<any>(`/users/${userId}`, payload);
     return res.data;
   }
 
@@ -413,13 +394,7 @@ export default function AdminUsersPage() {
       return;
     }
 
-    if (!token) {
-      const msg =
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
-      setError(msg);
-      showToast(msg);
-      return;
-    }
+
 
     try {
       setEditSaving(true);
@@ -475,20 +450,14 @@ export default function AdminUsersPage() {
   }
 
   async function deleteUser(userId: number | string) {
-    const res = await axiosAuth.delete(`/api/users/${userId}`);
+    const res = await api.delete<any>(`/users/${userId}`);
     return res.data;
   }
 
   async function onConfirmDeleteUser() {
     if (!deleting) return;
 
-    if (!token) {
-      const msg =
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").';
-      setError(msg);
-      showToast(msg);
-      return;
-    }
+
 
     try {
       setDeleteSaving(true);
@@ -661,13 +630,6 @@ export default function AdminUsersPage() {
               </table>
             </div>
 
-            {!token && !loading && (
-              <p className="mt-4 text-sm text-gray-500">
-                Token belum ditemukan. Pastikan kamu sudah login dan token
-                tersimpan di localStorage dengan key{" "}
-                <span className="font-medium">"token"</span>.
-              </p>
-            )}
           </div>
         </div>
       </div>

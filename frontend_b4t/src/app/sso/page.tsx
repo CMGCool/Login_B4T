@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 export default function SSOCallbackPage() {
   const router = useRouter();
@@ -17,17 +18,21 @@ export default function SSOCallbackPage() {
       return;
     }
 
-    localStorage.setItem("token", token);
-    // Set cookie shared agar dashboard_b4t bisa pakai sesi yang sama
-    document.cookie = `token=${token}; path=/; domain=localhost; SameSite=Lax`;
-
-    if (role === "super_admin") {
-      router.replace("/super-admin/dashboard");
-    } else if (role === "admin") {
-      router.replace("/admin/dashboard");
-    } else {
-      router.replace("/user/welcome");
-    }
+    // Call sso-finalize to set backend cookie
+    api.post("/auth/sso-finalize", { token })
+      .then(() => {
+        if (role === "super_admin") {
+          router.replace("/super-admin/dashboard");
+        } else if (role === "admin") {
+          router.replace("/admin/dashboard");
+        } else {
+          router.replace("/user/welcome");
+        }
+      })
+      .catch((err: any) => {
+        console.error("SSO Finalize failed:", err);
+        router.replace("/auth/Signin");
+      });
   }, [router]);
 
   return (

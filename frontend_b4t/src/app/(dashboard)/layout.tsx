@@ -1,10 +1,38 @@
-import type { ReactNode } from "react";
+"use client";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  // Jangan render sidebar di sini.
-  // Sidebar akan di-handle oleh layout per role:
-  // - /(dashboard)/super-admin/layout.tsx
-  // - /(dashboard)/admin/layout.tsx
-  // - /(dashboard)/user/layout.tsx (kalau ada)
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    api
+      .get("/me")
+      .then(() => {
+        // ✅ Login valid
+        console.log("Auth check success");
+        setCheckingAuth(false);
+      })
+      .catch((err) => {
+        console.error("Auth check failed:", err);
+        router.replace("/auth/Signin");
+      });
+  }, [router]);
+
+  if (checkingAuth) {
+    return (
+      <div style={{ padding: 20 }}>
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+  console.log("🔥 DASHBOARD LAYOUT MOUNTED");
   return <>{children}</>;
 }

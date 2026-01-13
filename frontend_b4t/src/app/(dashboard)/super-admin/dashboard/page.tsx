@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Users, UserCog, Clock } from "lucide-react";
 
@@ -52,8 +52,6 @@ export default function SuperAdminDashboardPage() {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   /* =======================
      HELPERS
@@ -78,33 +76,21 @@ export default function SuperAdminDashboardPage() {
       setError(null);
 
       try {
-        const token = getToken();
-        const headers = token
-          ? { Authorization: `Bearer ${token}` }
-          : undefined;
-
         // 1️⃣ Stats utama
-        const res = await axios.get(
-          `${API_BASE_URL}/api/super-admin/dashboard-stats`,
-          { headers }
-        );
-
+        const res = await api.get("/super-admin/dashboard-stats");
         const statsData = res.data?.data ?? res.data ?? {};
 
         const total_admin = Number(statsData?.total_admin ?? 0);
         const total_user = Number(statsData?.total_user ?? 0);
 
         // 2️⃣ Users untuk pending approval
-        const resUsers = await axios.get(
-          `${API_BASE_URL}/api/super-admin/users`,
-          { headers }
-        );
+        const resUsers = await api.get("/super-admin/users");
 
         const raw: BackendUser[] = Array.isArray(resUsers.data)
           ? resUsers.data
           : Array.isArray(resUsers.data?.data)
-          ? resUsers.data.data
-          : [];
+            ? resUsers.data.data
+            : [];
 
         const onlyUsers = raw.filter((u) => {
           const r = String(u.role ?? "").toLowerCase();
@@ -121,8 +107,8 @@ export default function SuperAdminDashboardPage() {
       } catch (e: any) {
         setError(
           e?.response?.data?.message ||
-            e?.message ||
-            "Gagal mengambil data dashboard super admin."
+          e?.message ||
+          "Gagal mengambil data dashboard super admin."
         );
       } finally {
         setLoading(false);
@@ -237,9 +223,9 @@ export default function SuperAdminDashboardPage() {
           />
           <TopServicesChart month={month} year={year} />
           <div className="lg:col-span-2">
-          <RevenuePerformanceChart />
+            <RevenuePerformanceChart />
+          </div>
         </div>
-      </div>
       </div>
 
       <div className="h-12" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Users, Clock } from "lucide-react";
 import { ServiceCostRecap } from "@/components/dashboard/Servicecost";
@@ -37,11 +37,7 @@ export default function AdminDashboardPage() {
     pending_approval: 0,
   });
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const mapApproved = (u: BackendUser) => {
     // Prioritas 1: flag is_approved
@@ -62,15 +58,8 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setError(null);
 
-      const token = getToken();
-
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/api/admin/dashboard/stats`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          }
-        );
+        const res = await api.get<any>("/admin/dashboard/stats");
 
         setStatsValue({
           total_user: Number(res.data?.total_user ?? 0),
@@ -79,15 +68,13 @@ export default function AdminDashboardPage() {
       } catch (e: any) {
         // ✅ Opsi B fallback: hitung dari list users admin
         try {
-          const res2 = await axios.get(`${API_BASE_URL}/api/admin/users`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          });
+          const res2 = await api.get<any>("/admin/users");
 
           const raw: BackendUser[] = Array.isArray(res2.data)
             ? res2.data
             : Array.isArray(res2.data?.data)
-            ? res2.data.data
-            : [];
+              ? res2.data.data
+              : [];
           const onlyUsers = raw.filter(
             (u) => String(u.role ?? "").toLowerCase() === "user" || !u.role
           );
@@ -110,7 +97,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchStats();
-  }, [API_BASE_URL]);
+  }, []);
 
   const cards = useMemo(
     () => [
@@ -204,21 +191,13 @@ export default function AdminDashboardPage() {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <ServiceCostRecap month={month} year={year} onMonthChange={setMonth}onYearChange={setYear} />
+          <ServiceCostRecap month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
           <TopServicesChart month={month} year={year} />
-        <div className="lg:col-span-2">
-                  <RevenuePerformanceChart />
-        </div>
+          <div className="lg:col-span-2">
+            <RevenuePerformanceChart />
+          </div>
         </div>
 
-        {/* Helper kecil kalau token belum ada */}
-        {!loading && !error && !getToken() && (
-          <p className="mt-4 text-sm text-gray-500">
-            Token belum ditemukan. Pastikan kamu sudah login dan token tersimpan
-            di localStorage dengan key{" "}
-            <span className="font-medium">"token"</span>.
-          </p>
-        )}
       </div>
 
       <div className="h-12" />

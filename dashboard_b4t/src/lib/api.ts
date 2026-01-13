@@ -20,7 +20,14 @@ function getAuthHeader(): Record<string, string> {
 }
 
 export async function fetchWithAuth<T = unknown>({ path, ...opts }: FetchOpts): Promise<T> {
-  const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
+  let normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  // Prevent double /api prefix if both baseUrl and path have it
+  if (baseUrl.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    normalizedPath = normalizedPath.substring(4); // Remove "/api"
+  }
+
+  const url = path.startsWith("http") ? path : `${baseUrl}${normalizedPath}`;
 
   const res = await fetch(url, {
     credentials: "include", // cookie jika ada
@@ -51,26 +58,29 @@ async function safeMessage(res: Response) {
 }
 
 export async function getCurrentUser() {
-  return fetchWithAuth<{ user?: unknown; data?: unknown }>({ path: "/api/me" });
+  return fetchWithAuth<{ user?: unknown; data?: unknown }>({ path: "/me" });
 }
 
 // Axios-like API wrapper untuk kompatibilitas dengan components
 export const api = {
   baseURL: baseUrl,
-  
+
   async get<T = unknown>(path: string, config?: { params?: Record<string, any> }): Promise<ApiResponse<T>> {
-    const url = new URL(path, baseUrl);
+    let fullPath = path;
     if (config?.params) {
+      const searchParams = new URLSearchParams();
       Object.entries(config.params).forEach(([key, value]) => {
-        url.searchParams.append(key, String(value));
+        searchParams.append(key, String(value));
       });
+      const separator = path.includes("?") ? "&" : "?";
+      fullPath = `${path}${separator}${searchParams.toString()}`;
     }
-    
+
     const data = await fetchWithAuth<T>({
-      path: url.toString(),
+      path: fullPath,
       method: "GET",
     });
-    
+
     return { data };
   },
 
@@ -81,7 +91,7 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
       headers: config?.headers || {},
     });
-    
+
     return { data };
   },
 
@@ -92,7 +102,7 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
       headers: config?.headers || {},
     });
-    
+
     return { data };
   },
 
@@ -102,7 +112,7 @@ export const api = {
       method: "DELETE",
       headers: config?.headers || {},
     });
-    
+
     return { data };
   },
 };

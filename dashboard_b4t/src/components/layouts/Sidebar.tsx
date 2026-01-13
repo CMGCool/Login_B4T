@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid,
-  Users,
-  UserCog,
-  Settings,
   LogOut,
   UserCircle2,
 } from "lucide-react";
@@ -53,14 +50,16 @@ export default function Sidebar() {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await api.get<any>("/api/me");
+        const res = await api.get<any>("/me");
         const payload = res.data;
+        console.log("Sidebar fetchMe payload:", payload);
         setMe({
           name: payload?.name ?? null,
           email: payload?.email ?? null,
           role: payload?.role ?? null,
         });
-      } catch {
+      } catch (err) {
+        console.error("Sidebar fetchMe error:", err);
         setMe({ name: null, email: null, role: null });
       }
     };
@@ -70,7 +69,7 @@ export default function Sidebar() {
 
   const onLogout = async () => {
     try {
-      await api.post("/api/logout");
+      await api.post("/logout");
     } catch {
       // abaikan kalau gagal
     } finally {
@@ -99,14 +98,14 @@ export default function Sidebar() {
 
       <div className="flex-1" />
 
-        <button
-          type="button"
-          onClick={() => router.push("http://localhost:3000/super-admin/dashboard")}
-          className={itemClass(isSettings)}
-        >
-          <GiBackForth className="h-4 w-4" />
-          Kembali
-        </button>
+      <button
+        type="button"
+        onClick={() => router.push("http://localhost:3000/super-admin/dashboard")}
+        className={itemClass(isSettings)}
+      >
+        <GiBackForth className="h-4 w-4" />
+        Kembali
+      </button>
 
       {/* Profile + Logout */}
       <div className="mt-6 pt-4 border-t border-gray-100">

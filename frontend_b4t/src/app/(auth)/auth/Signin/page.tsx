@@ -44,15 +44,7 @@ const LOGIN_MESSAGES = {
   somethingWrong: "Something went wrong. Please try again.",
 } as const;
 
-/**
- * ✅ ADDED: Try to map backend/axios errors into friendly messages
- * Catatan:
- * - 401 -> kredensial salah
- * - 403 -> akun belum aktif / pending approval
- * - 409 -> akun terdaftar via Google (contoh umum)
- * - 5xx / network -> pesan umum
- * - kalau backend sudah kirim "message" yang spesifik, kita coba pakai juga (sepanjang relevan)
- */
+
 function getLoginErrorMessage(err: unknown): string {
   // Default fallback
   const fallback = LOGIN_MESSAGES.failedLater;
@@ -151,9 +143,10 @@ export default function SigninPage() {
 
   const onSubmit = async (values: SignInValues) => {
     if (!captchaToken) {
-    setError("Please verify that you are not a robot.");
-    return;
-  }
+      setError("Please verify that you are not a robot.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -164,7 +157,8 @@ export default function SigninPage() {
         recaptchaToken: captchaToken,
       });
 
-      const role = res?.role;
+      // ✅ FIX: Axios response data is in res.data
+      const role = res.data?.role;
 
       if (role === "super_admin") {
         router.replace("/super-admin/dashboard");
@@ -173,18 +167,13 @@ export default function SigninPage() {
       } else {
         router.replace("/user/welcome");
       }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message ?? "Login failed");
-      } else {
-        setError("Login failed");
-      }
-      setCaptchaToken(null);
-      recaptchaRef.current?.reset();
+    } catch (err) {
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-white px-4">
@@ -253,13 +242,14 @@ export default function SigninPage() {
               )}
             />
             <div className="flex justify-center">
-            <ReCAPTCHA
-            ref={recaptchaRef}
-            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-            onChange={(token) => setCaptchaToken(token)}
-            />
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                onChange={(token) => setCaptchaToken(token)}
+                onExpired={() => setCaptchaToken(null)}
+              />
             </div>
-           
+
             {/* Button */}
             <Button
               type="submit"

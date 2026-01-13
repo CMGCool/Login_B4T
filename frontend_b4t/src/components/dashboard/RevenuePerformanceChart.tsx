@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -78,18 +78,7 @@ function monthShort(bulan: string) {
 }
 
 export function RevenuePerformanceChart() {
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -107,7 +96,7 @@ export function RevenuePerformanceChart() {
         setErr(null);
 
         // ambil data biaya vs target
-        const res = await axiosAuth.get("/api/analytics/chart-biaya-vs-target", {
+        const res = await api.get("/analytics/chart-biaya-vs-target", {
           params: { tahun: year },
         });
 
@@ -141,8 +130,8 @@ export function RevenuePerformanceChart() {
         if (!alive) return;
         setErr(
           e?.response?.data?.message ||
-            e?.message ||
-            "Gagal mengambil data revenue performance."
+          e?.message ||
+          "Gagal mengambil data revenue performance."
         );
       } finally {
         if (!alive) return;
@@ -154,7 +143,7 @@ export function RevenuePerformanceChart() {
     return () => {
       alive = false;
     };
-  }, [axiosAuth, year]);
+  }, [year]);
 
   const rangeText = useMemo(() => `January - Dec ${year}`, [year]);
 

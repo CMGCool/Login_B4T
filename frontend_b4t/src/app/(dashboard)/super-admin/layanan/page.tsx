@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Pencil, Trash2, Plus, X } from "lucide-react";
@@ -24,18 +24,7 @@ type UiLayanan = {
 };
 
 export default function SuperAdminTestingPage() {
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -78,10 +67,10 @@ export default function SuperAdminTestingPage() {
   /* =======================
      ✅ ENDPOINTS
   ======================= */
-  const ENDPOINT_LIST = "/api/layanan";
-  const ENDPOINT_CREATE = "/api/layanan";
-  const ENDPOINT_UPDATE = (id: number | string) => `/api/layanan/${id}`;
-  const ENDPOINT_DELETE = (id: number | string) => `/api/layanan/${id}`;
+  const ENDPOINT_LIST = "/layanan";
+  const ENDPOINT_CREATE = "/layanan";
+  const ENDPOINT_UPDATE = (id: number | string) => `/layanan/${id}`;
+  const ENDPOINT_DELETE = (id: number | string) => `/layanan/${id}`;
 
   /* =======================
      ✅ FETCH LIST
@@ -91,13 +80,13 @@ export default function SuperAdminTestingPage() {
     setError(null);
 
     try {
-      const res = await axiosAuth.get(ENDPOINT_LIST);
+      const res = await api.get<any>(ENDPOINT_LIST);
 
       const raw: BackendLayanan[] = Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data)
-        ? res.data
-        : [];
+          ? res.data
+          : [];
 
       const mapped: UiLayanan[] = raw.map((r) => ({
         id: r.id,
@@ -118,8 +107,7 @@ export default function SuperAdminTestingPage() {
 
   useEffect(() => {
     fetchLayanan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL]);
+  }, []);
 
   /* =======================
      ✅ FILTER SEARCH
@@ -194,18 +182,11 @@ export default function SuperAdminTestingPage() {
       return;
     }
 
-    if (!token) {
-      showToast(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
-
     try {
       setSaving(true);
       setError(null);
 
-      await axiosAuth.post(ENDPOINT_CREATE, {
+      await api.post<any>(ENDPOINT_CREATE, {
         nama_layanan: addForm.nama_layanan.trim(),
         tanggal_layanan: addForm.tanggal_layanan,
         pembayaran: Number(addForm.pembayaran || 0),
@@ -225,7 +206,7 @@ export default function SuperAdminTestingPage() {
 
   /* =========================================================
      ✅ MODAL EDIT DATA
-========================================================= */
+     ========================================================= */
   const [openEdit, setOpenEdit] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editing, setEditing] = useState<UiLayanan | null>(null);
@@ -267,18 +248,11 @@ export default function SuperAdminTestingPage() {
       return;
     }
 
-    if (!token) {
-      showToast(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
-
     try {
       setEditSaving(true);
       setError(null);
 
-      await axiosAuth.put(ENDPOINT_UPDATE(editing.id), {
+      await api.put<any>(ENDPOINT_UPDATE(editing.id), {
         nama_layanan: editForm.nama_layanan.trim(),
         tanggal_layanan: editForm.tanggal_layanan,
         pembayaran: Number(editForm.pembayaran || 0),
@@ -298,7 +272,7 @@ export default function SuperAdminTestingPage() {
 
   /* =========================================================
      ✅ MODAL DELETE DATA
-========================================================= */
+     ========================================================= */
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleting, setDeleting] = useState<UiLayanan | null>(null);
@@ -319,18 +293,11 @@ export default function SuperAdminTestingPage() {
   async function onConfirmDelete() {
     if (!deleting) return;
 
-    if (!token) {
-      showToast(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
-
     try {
       setDeleteSaving(true);
       setError(null);
 
-      await axiosAuth.delete(ENDPOINT_DELETE(deleting.id));
+      await api.delete<any>(ENDPOINT_DELETE(deleting.id));
 
       showToast("Layanan berhasil dihapus.");
       closeDeleteModal();
@@ -493,13 +460,6 @@ export default function SuperAdminTestingPage() {
               </table>
             </div>
 
-            {!token && !loading && (
-              <p className="mt-4 text-sm text-gray-500">
-                Token belum ditemukan. Pastikan kamu sudah login dan token
-                tersimpan di localStorage dengan key{" "}
-                <span className="font-medium">"token"</span>.
-              </p>
-            )}
           </div>
         </div>
       </div>

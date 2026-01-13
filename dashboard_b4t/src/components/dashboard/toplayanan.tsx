@@ -48,7 +48,7 @@ export function TopServicesChart({ month, year }: Props) {
       setError(null);
 
       try {
-        const res = await api.get<any>("/api/dashboard-layanan/usage", {
+        const res = await api.get<any>("/dashboard-layanan/usage", {
           params: { month, year },
         });
 
@@ -64,7 +64,7 @@ export function TopServicesChart({ month, year }: Props) {
       } catch (err: any) {
         setError(
           err?.response?.data?.message ||
-            "Failed to load top services data"
+          "Failed to load top services data"
         );
         setData([]);
       } finally {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Pencil, Trash2, Plus, EyeOff, X } from "lucide-react";
@@ -42,15 +42,7 @@ export default function SuperAdminAdminPage() {
 
   const [admins, setAdmins] = useState<UiAdmin[]>([]);
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   /* =======================
      ✅ TOAST NOTIFICATION
@@ -84,13 +76,13 @@ export default function SuperAdminAdminPage() {
     setError(null);
 
     try {
-      const res = await axiosAuth.get("/api/super-admin/users");
+      const res = await api.get("/super-admin/users");
 
       const raw: BackendUser[] = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.data)
-        ? res.data.data
-        : [];
+          ? res.data.data
+          : [];
 
       const onlyAdmins = raw.filter(
         (u) => String(u.role ?? "").toLowerCase() === "admin"
@@ -191,7 +183,7 @@ export default function SuperAdminAdminPage() {
     email: string;
     password: string;
   }) {
-    const res = await axiosAuth.post("/api/super-admin/create-admin", payload);
+    const res = await api.post("/super-admin/create-admin", payload);
     return res.data;
   }
 
@@ -206,12 +198,7 @@ export default function SuperAdminAdminPage() {
       return;
     }
 
-    if (!token) {
-      toastError(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
+
 
     try {
       setSaving(true);
@@ -284,7 +271,7 @@ export default function SuperAdminAdminPage() {
   }, [openEdit, editing]);
 
   async function updateAdmin(userId: number | string, payload: any) {
-    const res = await axiosAuth.put(`/api/users/${userId}`, payload);
+    const res = await api.put(`/users/${userId}`, payload);
     return res.data;
   }
 
@@ -300,12 +287,7 @@ export default function SuperAdminAdminPage() {
       return;
     }
 
-    if (!token) {
-      toastError(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
+
 
     try {
       setEditSaving(true);
@@ -360,19 +342,14 @@ export default function SuperAdminAdminPage() {
   }
 
   async function deleteAdmin(userId: number | string) {
-    const res = await axiosAuth.delete(`/api/users/${userId}`);
+    const res = await api.delete(`/users/${userId}`);
     return res.data;
   }
 
   async function onConfirmDeleteAdmin() {
     if (!deleting) return;
 
-    if (!token) {
-      toastError(
-        'Token belum ditemukan. Silakan login dulu (localStorage key: "token").'
-      );
-      return;
-    }
+
 
     try {
       setDeleteSaving(true);
@@ -399,21 +376,18 @@ export default function SuperAdminAdminPage() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${
-              t.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
+            className={`w-[320px] rounded-xl border px-4 py-3 shadow-lg bg-white ${t.type === "success" ? "border-green-200" : "border-red-200"
+              }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                    t.type === "success" ? "bg-green-500" : "bg-red-500"
-                  }`}
+                  className={`mt-1 h-2.5 w-2.5 rounded-full ${t.type === "success" ? "bg-green-500" : "bg-red-500"
+                    }`}
                 />
                 <p
-                  className={`text-sm font-medium ${
-                    t.type === "success" ? "text-green-700" : "text-red-700"
-                  }`}
+                  className={`text-sm font-medium ${t.type === "success" ? "text-green-700" : "text-red-700"
+                    }`}
                 >
                   {t.message}
                 </p>
@@ -534,13 +508,7 @@ export default function SuperAdminAdminPage() {
               </table>
             </div>
 
-            {!token && !loading && (
-              <p className="mt-4 text-sm text-gray-500">
-                Token belum ditemukan. Pastikan kamu sudah login dan token
-                tersimpan di localStorage dengan key{" "}
-                <span className="font-medium">"token"</span>.
-              </p>
-            )}
+
           </div>
         </div>
       </div>

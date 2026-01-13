@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { LayoutGrid, LogOut, UserCircle2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -23,26 +23,13 @@ export default function UserSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
   const [me, setMe] = useState<MeResponse>({
     name: null,
     email: null,
     role: null,
   });
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token
-        ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
-        : { Accept: "application/json" },
-    });
-  }, [API_BASE_URL, token]);
 
   // active state (USER)
   const isDashboard =
@@ -58,56 +45,29 @@ export default function UserSidebar() {
 
   useEffect(() => {
     const fetchMe = async () => {
-      if (!token) return;
-
-      // ✅ kalau sebelumnya sudah ada profile tersimpan, tampilkan dulu biar ga "Unknown" saat loading
       try {
-        const cached = localStorage.getItem("profile");
-        if (cached) {
-          const p = JSON.parse(cached);
-          setMe({
-            name: p?.name ?? null,
-            email: p?.email ?? null,
-            role: p?.role ?? null,
-          });
-        }
-      } catch {
-        // ignore
-      }
-
-      try {
-        // ✅ FIX: endpoint yang ADA di backend
-        const res = await axiosAuth.get("/api/user/welcome");
-
-        // ✅ tahan banting: dukung banyak bentuk response
+        const res = await api.get<any>("/user/welcome");
         const data = res.data?.user ?? res.data?.data ?? res.data ?? {};
 
-        const nextMe: MeResponse = {
+        setMe({
           name: data?.name ?? data?.full_name ?? data?.username ?? null,
           email: data?.email ?? data?.user_email ?? null,
           role: data?.role ?? "user",
-        };
-
-        setMe(nextMe);
-
-        // ✅ simpan untuk dipakai di halaman lain / refresh
-        localStorage.setItem("profile", JSON.stringify(nextMe));
+        });
       } catch {
         // ignore (fallback aman)
       }
     };
 
     fetchMe();
-  }, [axiosAuth, token]);
+  }, []);
 
   const onLogout = async () => {
     try {
-      if (token) await axiosAuth.post("/api/logout");
+      await api.post("/logout");
     } catch {
       // ignore
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("profile");
       router.replace("/auth/Signin");
     }
   };
@@ -146,7 +106,7 @@ export default function UserSidebar() {
             <p className="text-xs text-gray-500 truncate">{me.email || "-"}</p>
           </div>
         </div>
-        
+
         {/* Logout merah */}
         <button
           type="button"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { LayoutGrid, Users, Settings, LogOut, UserCircle2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { FaServicestack } from "react-icons/fa";
@@ -25,24 +25,13 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
   const [me, setMe] = useState<MeResponse>({
     name: null,
     email: null,
     role: null,
   });
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   // active states (ADMIN)
   const isDashboard = pathname.startsWith("/admin/dashboard");
@@ -61,28 +50,27 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     const fetchMe = async () => {
-      if (!token) return;
       try {
-        const res = await axiosAuth.get("/api/me");
+        const res = await api.get<any>("/me");
+        const data = res.data;
         setMe({
-          name: res.data?.name ?? null,
-          email: res.data?.email ?? null,
-          role: res.data?.role ?? null,
+          name: data?.name ?? null,
+          email: data?.email ?? null,
+          role: data?.role ?? null,
         });
       } catch {
         // fallback aman
       }
     };
     fetchMe();
-  }, [axiosAuth, token]);
+  }, []);
 
   const onLogout = async () => {
     try {
-      if (token) await axiosAuth.post("/api/logout");
+      await api.post("/logout");
     } catch {
       // ignore
     } finally {
-      localStorage.removeItem("token");
       router.replace("/auth/Signin");
     }
   };
@@ -127,19 +115,19 @@ export default function AdminSidebar() {
           type="button"
           onClick={() => router.push("/admin/layanan")}
           className={itemClass(isTesting)}
-          >
+        >
           < FaServicestack className="h-4 w-4" />
           Layanan
-          </button>
+        </button>
 
-          <button
+        <button
           type="button"
           onClick={() => router.push("/admin/target")}
           className={itemClass(isTarget)}
-          >
+        >
           <FaArrowTrendUp className="h-4 w-4" />
           Revenue Target
-          </button>
+        </button>
       </nav>
 
       <div className="flex-1" />

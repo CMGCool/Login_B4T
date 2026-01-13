@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import {
   LayoutGrid,
   Users,
@@ -33,26 +33,13 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
   const [me, setMe] = useState<MeResponse>({ name: null, email: null, role: null });
-
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   // Active states (Super Admin routes)
   const isDashboard = pathname.startsWith("/super-admin/dashboard");
   const isUsers = pathname.startsWith("/super-admin/users");
   const isAdmin = pathname.startsWith("/super-admin/admin");
-   const isTesting = pathname.startsWith("/super-admin/testing");
+  const isTesting = pathname.startsWith("/super-admin/testing");
   const isTarget = pathname.startsWith("/super-admin/target");
   const isSettings = pathname.startsWith("/super-admin/settings");
 
@@ -67,14 +54,13 @@ export default function Sidebar() {
   // Fetch profile sesuai user yang login
   useEffect(() => {
     const fetchMe = async () => {
-      if (!token) return;
-
       try {
-        const res = await axiosAuth.get("/api/me");
+        const res = await api.get<any>("/me");
+        const data = res.data;
         setMe({
-          name: res.data?.name ?? null,
-          email: res.data?.email ?? null,
-          role: res.data?.role ?? null,
+          name: data?.name ?? null,
+          email: data?.email ?? null,
+          role: data?.role ?? null,
         });
       } catch {
         // fallback aman
@@ -83,17 +69,14 @@ export default function Sidebar() {
     };
 
     fetchMe();
-  }, [axiosAuth, token]);
+  }, []);
 
   const onLogout = async () => {
     try {
-      if (token) {
-        await axiosAuth.post("/api/logout");
-      }
+      await api.post("/logout");
     } catch {
       // abaikan kalau gagal
     } finally {
-      localStorage.removeItem("token");
       router.replace("/auth/Signin");
     }
   };

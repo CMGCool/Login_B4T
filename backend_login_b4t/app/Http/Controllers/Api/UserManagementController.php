@@ -206,6 +206,11 @@ class UserManagementController extends Controller
     public function getMe(Request $request)
     {
         $user = $request->user();
+        \Illuminate\Support\Facades\Log::info('getMe controller hit. User: ' . ($user ? $user->username : 'NULL'));
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
 
         return response()->json([
             'id' => $user->id,

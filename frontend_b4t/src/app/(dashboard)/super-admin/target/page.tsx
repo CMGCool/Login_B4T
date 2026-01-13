@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Pencil, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -41,18 +41,7 @@ export default function TargetPage() {
   const [toastMsg, setToastMsg] = useState("");
   const toastTimer = useRef<number | null>(null);
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const axiosAuth = useMemo(() => {
-    return axios.create({
-      baseURL: API_BASE_URL,
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-  }, [API_BASE_URL, token]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -80,8 +69,8 @@ export default function TargetPage() {
   }
 
   // backend apiResource('target') => GET /api/target, PUT /api/target/{id}
-  const ENDPOINT_LIST = "/api/target";
-  const ENDPOINT_UPDATE = (id: number | string) => `/api/target/${id}`;
+  const ENDPOINT_LIST = "/target";
+  const ENDPOINT_UPDATE = (id: number | string) => `/target/${id}`;
 
   // fetch list dari backend (sekali, lalu filter by year di client)
   useEffect(() => {
@@ -92,13 +81,13 @@ export default function TargetPage() {
         setLoading(true);
         setErr(null);
 
-        const res = await axiosAuth.get(ENDPOINT_LIST);
+        const res = await api.get<any>(ENDPOINT_LIST);
 
         const raw: BackendTarget[] = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
 
         const mapped: RevenueTarget[] = raw.map((r) => ({
           id: r.id,
@@ -128,8 +117,7 @@ export default function TargetPage() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL]);
+  }, []);
 
   // filter tahun + search
   const filtered = useMemo(() => {
@@ -172,7 +160,7 @@ export default function TargetPage() {
       const nextVal = Number(editTarget || 0);
 
       // PUT ke backend (field sesuai controller: target_perbulan)
-      const res = await axiosAuth.put(ENDPOINT_UPDATE(editing.id), {
+      const res = await api.put<any>(ENDPOINT_UPDATE(editing.id), {
         target_perbulan: nextVal,
       });
 

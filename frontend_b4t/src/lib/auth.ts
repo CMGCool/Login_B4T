@@ -15,58 +15,25 @@ export type RegisterPayload = {
 
 
 export async function login(data: LoginPayload) {
-  const payload = {
-    email: data.login,     
-    username: data.login,  
+  return api.post("/login", {
+    email: data.login,
+    username: data.login,
     password: data.password,
-  };
-
-  const res = await api.post("/login", payload);
-
-  if (typeof window !== "undefined") {
-    const token = res.data?.token || res.data?.access_token;
-    if (token) {
-      // Simpan untuk app ini (tetap pertahankan behavior lama)
-      localStorage.setItem("token", token);
-      // Set cookie shared antar port (agar dashboard_b4t bisa pakai)
-      document.cookie = `token=${token}; path=/; domain=localhost; SameSite=Lax`;
-    }
-  }
-
-  return res.data;
+    recaptchaToken: data.recaptchaToken,
+  });
 }
-
 
 export async function register(data: RegisterPayload) {
-  const res = await api.post("/register", data);
-  return res.data;
+  return api.post("/register", data);
 }
 
-/* =======================
-   LOGOUT LOCAL
-   ======================= */
-export function logoutLocal() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-  }
-}
-
-/* =======================
-   LOGOUT (Server + Cookie + Local)
-   ======================= */
-export async function logoutAll() {
+export async function logout() {
   try {
     await api.post("/logout");
-  } catch (e) {
-    // ignore
-  }
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-    // Hapus cookie shared
-    document.cookie = "token=; path=/; domain=localhost; Max-Age=0";
+  } finally {
+    window.location.href = "/auth/Signin";
   }
 }
-
 /* =======================
    ✅ GOOGLE SSO
    ======================= */

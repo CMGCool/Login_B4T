@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 type MeResponse = {
   name?: string | null;
@@ -17,8 +17,7 @@ type DayPart = "morning" | "afternoon" | "night";
 export default function UserDashboardPage() {
   const router = useRouter();
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
 
   const [search, setSearch] = useState("");
   const [loadingMe, setLoadingMe] = useState(true);
@@ -30,8 +29,7 @@ export default function UserDashboardPage() {
     role: null,
   });
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
 
   // ===== Realtime clock (update tiap menit) =====
   const [now, setNow] = useState<Date>(() => new Date());
@@ -96,19 +94,9 @@ export default function UserDashboardPage() {
     setLoadingMe(true);
     setError(null);
 
-    const token = getToken();
-    if (!token) {
-      router.replace("/auth/Signin");
-      return;
-    }
-
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/user/welcome`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
+      // ✅ Use centralized api client
+      const res = await api.get("/user/welcome");
 
       // ✅ tahan banting: dukung banyak bentuk response
       const data = res.data?.user ?? res.data?.data ?? res.data ?? {};
@@ -121,24 +109,12 @@ export default function UserDashboardPage() {
 
       setMe(profile);
 
-      // ✅ simpan untuk dipakai sidebar / komponen lain (agar "Account Unknown" hilang)
-      if (typeof window !== "undefined") {
-        localStorage.setItem("profile", JSON.stringify(profile));
-      }
+      setMe(profile);
     } catch (e: any) {
-      const status = e?.response?.status;
-
-      if (status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("profile");
-        router.replace("/auth/Signin");
-        return;
-      }
-
       setError(
         e?.response?.data?.message ||
-          e?.message ||
-          "Gagal mengambil data user dari backend (/api/user/welcome)."
+        e?.message ||
+        "Gagal mengambil data user dari backend (/api/user/welcome)."
       );
     } finally {
       setLoadingMe(false);
@@ -147,8 +123,7 @@ export default function UserDashboardPage() {
 
   useEffect(() => {
     fetchMe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL]);
+  }, []);
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">

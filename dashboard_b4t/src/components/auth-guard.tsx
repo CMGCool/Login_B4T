@@ -8,7 +8,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
-  const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || "http://localhost:3000/login";
+  const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || "http://localhost:3000/auth/Signin";
 
   useEffect(() => {
     (async () => {

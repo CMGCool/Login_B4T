@@ -91,7 +91,7 @@ export function RevenuePerformanceChart() {
         setLoading(true);
         setErr(null);
 
-        const res = await api.get<any>("/api/analytics/chart-biaya-vs-target", {
+        const res = await api.get<any>("/analytics/chart-biaya-vs-target", {
           params: { tahun: year },
         });
 
@@ -123,8 +123,8 @@ export function RevenuePerformanceChart() {
         if (!alive) return;
         setErr(
           e?.response?.data?.message ||
-            e?.message ||
-            "Gagal mengambil data revenue performance."
+          e?.message ||
+          "Gagal mengambil data revenue performance."
         );
       } finally {
         if (!alive) return;

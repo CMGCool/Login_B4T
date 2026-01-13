@@ -73,23 +73,23 @@ export default function SuperAdminDashboardPage() {
 
       try {
         // 1️⃣ Stats utama
-        const resStats = await api.get<any>("/api/super-admin/dashboard-stats");
+        const resStats = await api.get<any>("/super-admin/dashboard-stats");
         const statsPayload = resStats.data;
-        
+
         const statsData = statsPayload?.data ?? statsPayload ?? {};
 
         const total_admin = Number(statsData?.total_admin ?? 0);
         const total_user = Number(statsData?.total_user ?? 0);
 
         // 2️⃣ Users untuk pending approval
-        const resUsers = await api.get<any>("/api/super-admin/users");
+        const resUsers = await api.get<any>("/super-admin/users");
         const usersPayload = resUsers.data;
 
         const raw: BackendUser[] = Array.isArray(usersPayload)
           ? usersPayload
           : Array.isArray(usersPayload?.data)
-          ? usersPayload.data
-          : [];
+            ? usersPayload.data
+            : [];
 
         const onlyUsers = raw.filter((u) => {
           const r = String(u.role ?? "").toLowerCase();
@@ -106,7 +106,7 @@ export default function SuperAdminDashboardPage() {
       } catch (e: any) {
         setError(
           e?.message ||
-            "Gagal mengambil data dashboard super admin."
+          "Gagal mengambil data dashboard super admin."
         );
       } finally {
         setLoading(false);

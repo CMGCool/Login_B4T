@@ -60,7 +60,7 @@ export function ServiceCostRecap({
 
       try {
         const res = await api.get<any>(
-          "/api/dashboard-layanan/biaya-per-minggu",
+          "/dashboard-layanan/biaya-per-minggu",
           {
             params: { month, year },
           }
@@ -71,7 +71,7 @@ export function ServiceCostRecap({
       } catch (e: any) {
         setError(
           e?.response?.data?.message ||
-            "Failed to load service cost recap"
+          "Failed to load service cost recap"
         );
         setData([]);
       } finally {
@@ -141,20 +141,20 @@ export function ServiceCostRecap({
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#000000", fontSize: 12 }} 
+                tick={{ fill: "#000000", fontSize: 12 }}
                 stroke="#000000"
-                
+
               />
               <Tooltip
                 formatter={(value) =>
-                typeof value === "number"
-      ? new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-        }).format(value)
-      : "-"
-  }
-/>
+                  typeof value === "number"
+                    ? new Intl.NumberFormat("id-ID", {
+                      style: "currency",
+                      currency: "IDR",
+                    }).format(value)
+                    : "-"
+                }
+              />
 
               <Bar
                 dataKey="value"

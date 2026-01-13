@@ -76,43 +76,70 @@ class AuthController extends Controller
             'token' => $token,
             'role' => $user->role,
             'user' => $user
-        ]);
-
-        // PROD VERSION (uncomment saat deploy):
-        // ])->cookie(
-        //     'token',
-        //     $token,
-        //     60 * 24,
-        //     '/',
-        //     '.yourdomain.com', // shared subdomain
-        //     true, // secure: HTTPS only
-        //     true, // httpOnly: tidak bisa diakses JS (XSS protection)
-        //     false,
-        //     'lax'
-        // );
-
+        ])->cookie(
+            'token',
+            $token,
+            60 * 24,
+            '/',
+            null,       // FIX: domain null for localhost
+            false,      // FIX: secure false for http
+            true,
+            false,
+            'Lax'
+        );
     }
 
     public function logout(Request $request)
     {
-        // Hapus token yang sedang digunakan
-        $request->user()->currentAccessToken()->delete();
+        if ($request->user()) {
+            $request->user()->currentAccessToken()?->delete();
+        }
 
         return response()->json([
             'message' => 'Logout berhasil'
-        ]);
+        ])->cookie(
+            'token',
+            '',
+            -1,
+            '/',
+            null,
+            false,
+            true,
+            false,
+            'Lax'
+        );
+    }
+    public function ssoFinalize(Request $request)
+    {
+        $token = $request->input('token');
+        
+        if (!$token) {
+            return response()->json(['message' => 'Token required'], 400);
+        }
 
-        // PROD VERSION (uncomment saat deploy):
-        // ])->cookie(
-        //     'token',
-        //     '',
-        //     -1,
-        //     '/',
-        //     '.yourdomain.com',
-        //     true,
-        //     true,
-        //     false,
-        //     'lax'
-        // );
+        // Find the token in the database
+        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+
+        if (!$accessToken || !$accessToken->tokenable) {
+            return response()->json(['message' => 'Invalid or expired SSO token'], 401);
+        }
+
+        $user = $accessToken->tokenable;
+
+        return response()->json([
+            'message' => 'SSO Finalized',
+            'role' => $user->role,
+            'user' => $user
+        ])->cookie(
+            'token',
+            $token,
+            60 * 24,
+            '/',
+            null,       // domain null for localhost
+            false,      // secure false for http
+            true,
+            false,
+            'Lax'
+        );
     }
 }

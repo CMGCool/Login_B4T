@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import {
   BarChart,
   Bar,
@@ -47,11 +47,7 @@ export function ServiceCostRecap({
   onMonthChange,
   onYearChange,
 }: Props) {
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const [data, setData] = useState<BackendItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,23 +61,15 @@ export function ServiceCostRecap({
       setError(null);
 
       try {
-        const token = getToken();
-
-        const res = await axios.get(
-          `${API_BASE_URL}/api/dashboard-layanan/biaya-per-minggu`,
-          {
-            params: { month, year },
-            headers: token
-              ? { Authorization: `Bearer ${token}` }
-              : undefined,
-          }
-        );
+        const res = await api.get("/dashboard-layanan/biaya-per-minggu", {
+          params: { month, year },
+        });
 
         setData(res.data?.data ?? []);
       } catch (e: any) {
         setError(
           e?.response?.data?.message ||
-            "Failed to load service cost recap"
+          "Failed to load service cost recap"
         );
         setData([]);
       } finally {
@@ -90,7 +78,7 @@ export function ServiceCostRecap({
     };
 
     fetchData();
-  }, [month, year, API_BASE_URL]);
+  }, [month, year]);
 
   return (
     <Card className="h-full">
@@ -153,11 +141,11 @@ export function ServiceCostRecap({
                 tickLine={false}
               />
               <Tooltip
-                formatter={(value: number) =>
+                formatter={(value: any) =>
                   new Intl.NumberFormat("id-ID", {
                     style: "currency",
                     currency: "IDR",
-                  }).format(value)
+                  }).format(Number(value))
                 }
               />
               <Bar
