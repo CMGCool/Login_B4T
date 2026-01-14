@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\TargetsController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +26,11 @@ use App\Http\Controllers\Api\LogController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/sso-finalize', [AuthController::class, 'ssoFinalize']);
+
+// Forgot Password Routes
+Route::post('/forgot-password/send-otp', [ForgotPasswordController::class, 'sendOtp']);
+Route::post('/forgot-password/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
+Route::post('/forgot-password/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 // Logout route
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
