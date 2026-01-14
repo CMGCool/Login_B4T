@@ -34,6 +34,28 @@ export async function logout() {
     window.location.href = "/auth/Signin";
   }
 }
+
+export async function sendForgotPasswordOtp(email: string) {
+  return api.post("/forgot-password/send-otp", { email });
+}
+
+export async function verifyForgotPasswordOtp(email: string, otp: string) {
+  return api.post("/forgot-password/verify-otp", { email, otp });
+}
+
+export async function resetPasswordWithOtp(
+  email: string,
+  resetToken: string,
+  password: string,
+  passwordConfirmation: string
+) {
+  return api.post("/forgot-password/reset-password", {
+    email,
+    reset_token: resetToken,
+    password,
+    password_confirmation: passwordConfirmation,
+  });
+}
 /* =======================
    ✅ GOOGLE SSO
    ======================= */

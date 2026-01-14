@@ -193,7 +193,7 @@ export default function SigninPage() {
 
         {/* Form */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Username */}
             <FormField
               control={form.control}
@@ -237,11 +237,18 @@ export default function SigninPage() {
                       className="h-11"
                     />
                   </FormControl>
+                  <Link
+                href="/auth/ForgotPassword"
+                className="text-gray-600 text-sm font-medium hover:underline mb-4 mt-1 flex justify-end"
+              >
+                Forgot Password?
+              </Link> 
                   <FormMessage />
                 </FormItem>
+                
               )}
             />
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <ReCAPTCHA
                 ref={recaptchaRef}
                 sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}

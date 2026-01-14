@@ -29,6 +29,7 @@ const SIGNUP_MESSAGES = {
   nameRequired: "Name is required.",
   usernameRequired: "Username is required.",
   passwordRequired: "Password is required.",
+  emailRequired: "Email is required.",
 
   // username / email
   usernameTaken: "Username is already taken.",
@@ -178,9 +179,6 @@ export default function SignupPage() {
         {/* Title */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-gray-900">Sign up</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Start your 30-day free trial.
-          </p>
         </div>
 
         {/* ✅ ADDED: Success (simple text) */}
@@ -202,7 +200,7 @@ export default function SignupPage() {
               render={({ field }) => (
                 <FormItem>
                   <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Name*
+                    Name<span className="text-red-500">*</span>
                   </label>
                   <FormControl>
                     <Input
@@ -225,13 +223,13 @@ export default function SignupPage() {
               render={({ field }) => (
                 <FormItem>
                   <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Username*
+                    Username<span className="text-red-500">*</span>
                   </label>
                   <FormControl>
                     <Input
                       {...field}
                       value={field.value ?? ""}
-                      placeholder="Enter your email"
+                      placeholder="Enter your username"
                       className="h-11"
                       autoComplete="username"
                     />
@@ -248,7 +246,7 @@ export default function SignupPage() {
               render={({ field }) => (
                 <FormItem>
                   <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Email (optional)
+                    Email<span className="text-red-500">*</span>
                   </label>
                   <FormControl>
                     <Input
@@ -272,7 +270,7 @@ export default function SignupPage() {
               render={({ field }) => (
                 <FormItem>
                   <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Password*
+                    Password<span className="text-red-500">*</span>
                   </label>
                   <FormControl>
                     <Input
