@@ -63,7 +63,6 @@ export default function Sidebar() {
           role: data?.role ?? null,
         });
       } catch {
-        // fallback aman
         setMe({ name: null, email: null, role: null });
       }
     };
@@ -169,7 +168,6 @@ export default function Sidebar() {
                 {me.name || "Account"}
               </p>
 
-              {/* ✅ Role mengikuti hasil login */}
               <p className="text-xs text-gray-500 truncate">
                 {roleLabel(me.role)}
               </p>
