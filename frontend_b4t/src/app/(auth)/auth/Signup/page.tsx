@@ -127,7 +127,7 @@ export default function SignupPage() {
       await register({
         name: values.name,
         username: values.username,
-        email: values.email || undefined, // optional
+        email: values.email,
         password: values.password,
       });
 

@@ -29,12 +29,10 @@ export const signUpFormSchema = z.object({
 
   email: z
     .string()
-    .optional()
-    .or(z.literal(""))
-    .refine(
-      (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-      { message: "Please enter a valid email address." }
-    ),
+    .min(1, { message: "Email is required." })
+    .refine((v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
+      message: "Please enter a valid email address.",
+    }),
 
   password: z
     .string()
