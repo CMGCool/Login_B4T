@@ -1,107 +1,120 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>OTP Code</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Your OTP Code</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    style="
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #ffffff;
+      font-size: 14px;
+    "
+  >
+    <div
+      style="
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 30px 20px 40px;
+        background: #f4f7ff;
+        background-image: url(https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661497957196_595865/email-template-background-banner);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: top center;
+        font-size: 14px;
+        color: #434343;
+        border-radius: 20px;
+      "
+    >
+      <header>
+        <table style="width: 100%;">
+          <tbody>
+            <tr style="height: 0;">
+              <td></td>
+              <td style="text-align: right;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </header>
+
+      <main>
+        <div
+          style="
             margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background-color: #ffffff;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
+            margin-top: 40px;
+            padding: 50px 25px;
+            background: #ffffff;
+            border-radius: 24px;
             text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #333;
-            margin: 0;
-            font-size: 28px;
-        }
-        .content {
-            color: #555;
-            line-height: 1.6;
-            margin: 20px 0;
-        }
-        .otp-box {
-            background-color: #f9f9f9;
-            border: 2px solid #007bff;
-            border-radius: 6px;
-            padding: 20px;
-            text-align: center;
-            margin: 30px 0;
-        }
-        .otp-code {
-            font-size: 36px;
-            font-weight: bold;
-            color: #007bff;
-            letter-spacing: 5px;
-            font-family: 'Courier New', monospace;
-        }
-        .expiry {
-            color: #ff6b6b;
-            font-size: 14px;
-            margin-top: 15px;
-        }
-        .footer {
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-top: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-        .warning {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            color: #856404;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Password Reset Request</h1>
-        </div>
-
-        <div class="content">
-            <p>Hi,</p>
-            <p>You requested to reset your password. Use the OTP code below to complete the process:</p>
-
-            <div class="otp-box">
-                <div class="otp-code">{{ $otp }}</div>
-                <div class="expiry">This code expires in 5 minutes</div>
-            </div>
-
-            <div class="warning">
-                <strong>⚠️ Security Notice:</strong> Never share this code with anyone. Our support team will never ask for this code.
-            </div>
-
-            <p>If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
-
-            <p>
-                Best regards,<br>
-                <strong>{{ config('app.name') }} Team</strong>
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+          "
+        >
+          <div style="width: 100%; max-width: 400px; margin: 0 auto;">
+            <h1
+              style="
+                margin: 0;
+                font-size: 20px;
+                font-weight: 600;
+                color: #1f1f1f;
+              "
+            >
+             Your OTP Code
+            </h1>
+            <p
+              style="
+                margin: 0;
+                margin-top: 15px;
+                font-size: 13px;
+                line-height: 1.5;
+                font-weight: 400;
+              "
+            >
+              Use the following OTP to complete your verification. This code is
+              valid for
+              <span style="font-weight: 600; color: #1f1f1f;">5 minutes</span>.
+              Do not share this code with others.
             </p>
+            <div style="margin-top: 30px;">
+                <span style="font-family: 'Sans Serif', Poppins, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #2563eb; background: #eff6ff; padding: 10px 20px; border-radius: 12px; display: inline-block;">{{ $otp }}</span>
+            </div>
+          </div>
         </div>
+      </main>
 
-        <div class="footer">
-            <p>This is an automated email. Please do not reply to this message.</p>
-            <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-        </div>
+      <footer
+        style="
+          width: 100%;
+          max-width: 400px;
+          margin: 30px auto 0;
+          text-align: center;
+        "
+      >
+        <p
+          style="
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.4;
+          "
+        >
+          Balai Besar Standardisasi dan Pelayanan Jasa Industri Bahan dan Barang Teknik
+        </p>
+        <p style="margin: 0; margin-top: 10px; font-size: 11px; color: #ffffff;">
+          Jl. Sangkuriang No.14, Dago, Bandung, Jawa Barat.
+        </p>
+        <p style="margin: 0; margin-top: 12px; font-size: 11px; color: #ffffff;">
+          Copyright © 2026. All rights reserved.
+        </p>
+      </footer>
     </div>
-</body>
+  </body>
 </html>
