@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 type SignUpValues = z.infer<typeof signUpFormSchema>;
 
@@ -163,7 +164,7 @@ export default function SignupPage() {
 
         setError(
           mapSignupServerMessage((err.response?.data as any)?.message) ??
-            SIGNUP_MESSAGES.registerFailed
+          SIGNUP_MESSAGES.registerFailed
         );
       } else {
         setError(SIGNUP_MESSAGES.registerFailed);
@@ -174,141 +175,195 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-white px-4">
-      <div className="w-full max-w-[360px]">
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900">Sign up</h1>
+    <div className="h-screen overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_720px] bg-[#ffffff]">
+      <div className="hidden lg:flex h-full pb-10 pt-4 items-stretch relative overflow-hidden">
+        <div className="relative flex-1 bg-white rounded-[40px] overflow-hidden border border-white">
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+          >
+            <defs>
+              <clipPath id="robotMask" clipPathUnits="objectBoundingBox">
+  
+                <path d="M0,0 
+                  L0,1 
+                  L0.80,1 
+                  Q0.84,1 0.84,0.95 
+                  Q0.88,0.5 0.91,0.05 
+                  Q0.92,0 0.88,0 
+                  Z" />
+              </clipPath>
+            </defs>
+          </svg>
+
+          <div
+            className="relative h-full w-full overflow-hidden"
+            style={{ clipPath: 'url(#robotMask)' }}
+          >
+            <Image
+              src="/images/register.png"
+              alt="Register background"
+              fill
+              sizes="50vw"
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
-
-        {/* ✅ ADDED: Success (simple text) */}
-        {success && (
-          <div className="mb-4 text-sm text-green-600 text-center">{success}</div>
-        )}
-
-        {/* Error (seperti simple text) */}
-        {error && (
-          <div className="mb-4 text-sm text-red-600 text-center">{error}</div>
-        )}
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            {/* NAME */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Name<span className="text-red-500">*</span>
-                  </label>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="Enter your name"
-                      className="h-11"
-                      autoComplete="name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* USERNAME */}
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Username<span className="text-red-500">*</span>
-                  </label>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="Enter your username"
-                      className="h-11"
-                      autoComplete="username"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* (Optional) EMAIL */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Email<span className="text-red-500">*</span>
-                  </label>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="Enter your email"
-                      className="h-11"
-                      type="email"
-                      autoComplete="email"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* PASSWORD */}
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <label className="block mb-1 text-sm font-medium text-gray-800">
-                    Password<span className="text-red-500">*</span>
-                  </label>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="Create a password"
-                      className="h-11"
-                      type="password"
-                      autoComplete="new-password"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Button */}
-            <Button
-              type="submit"
-              className="w-full h-11 bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Get started"}
-            </Button>
-
-            {/* Footer */}
-            <div className="text-center text-sm text-gray-500 pt-1">
-              Already have an account?{" "}
-              <Link
-                href="/auth/Signin"
-                className="text-blue-600 font-medium hover:underline"
-              >
-                Log in
-              </Link>
-            </div>
-          </form>
-        </Form>
       </div>
-    </div>
+      <div className="flex flex-col items-center justify-center h-full bg-white relative z-20">
+        <div className="w-full max-w-[360px] origin-center scale-[0.92]">
+          {/* Logo */}
+          <div className="mb-5 text-left">
+            <Image
+              src="/images/Logo-B4T.png"
+              alt="B4T Logo"
+              width={64}
+              height={32}
+              className="mt-5 mb-2 object-contain"
+            />
+          </div>
+
+          {/* Header */}
+          <div className="mb-6 text-left">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Sign up</h1>
+            <p className="mt-1 text-sm text-gray-500 font-medium">
+              Create your account to get started.
+            </p>
+          </div>
+
+          {/* Success/Error Message */}
+          {(success || error) && (
+            <div className={`mb-6 p-3 rounded-lg text-xs font-medium border ${success ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
+              }`}>
+              {success || error}
+            </div>
+          )}
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* NAME */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Name<span className="text-red-500">*</span>
+                    </label>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder="Enter your name"
+                        className="h-11 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        autoComplete="name"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[11px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* USERNAME */}
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Username<span className="text-red-500">*</span>
+                    </label>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder="Enter your username"
+                        className="h-11 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        autoComplete="username"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[11px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* EMAIL */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Email<span className="text-red-500">*</span>
+                    </label>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder="Enter your email"
+                        className="h-11 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        type="email"
+                        autoComplete="email"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[11px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* PASSWORD */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Password<span className="text-red-500">*</span>
+                    </label>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        placeholder="Create a password"
+                        className="h-11 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        type="password"
+                        autoComplete="new-password"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[11px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Button */}
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all"
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Get started"}
+                </Button>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center pt-2">
+                <p className="text-sm text-gray-500 font-medium">
+                  Already have an account?{" "}
+                  <Link
+                    href="/auth/Signin"
+                    className="text-blue-600 font-bold hover:underline ml-0.5"
+                  >
+                    Log in
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </div>
+    </div >
   );
 }
