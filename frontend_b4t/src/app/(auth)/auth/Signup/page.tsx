@@ -176,7 +176,6 @@ export default function SignupPage() {
 
   return (
     <div className="h-screen overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_720px] bg-[#ffffff]">
-      {/* Kolom Kiri: Image Card */}
       <div className="hidden lg:flex h-full pb-10 pt-4 items-stretch relative overflow-hidden">
         <div className="relative flex-1 bg-white rounded-[40px] overflow-hidden border border-white">
           <svg
@@ -186,7 +185,7 @@ export default function SignupPage() {
           >
             <defs>
               <clipPath id="robotMask" clipPathUnits="objectBoundingBox">
-                {/* Rounded Robot Shape: Adjusted for a more balanced ('rata') look */}
+  
                 <path d="M0,0 
                   L0,1 
                   L0.80,1 
@@ -213,8 +212,6 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-
-      {/* Kolom Kanan: Form Signup */}
       <div className="flex flex-col items-center justify-center h-full bg-white relative z-20">
         <div className="w-full max-w-[360px] origin-center scale-[0.92]">
           {/* Logo */}
