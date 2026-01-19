@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\TargetsController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\BniTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -109,4 +110,11 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::get('/logs', [LogController::class, 'index']);
     Route::get('/logs/{id}', [LogController::class, 'show']);
     Route::delete('/logs/cleanup', [LogController::class, 'cleanup']);
+});
+
+// Endpoint untuk testing BNI eCollection (sementara hanya super_admin)
+Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
+    Route::post('/bni/create', [BniTestController::class, 'create']);
+    Route::post('/bni/inquiry', [BniTestController::class, 'inquiry']);
+    Route::post('/bni/update-billing', [BniTestController::class, 'update']);
 });
