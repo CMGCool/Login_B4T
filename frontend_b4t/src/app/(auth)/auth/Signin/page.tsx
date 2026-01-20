@@ -346,7 +346,7 @@ export default function SigninPage() {
           style={{ clipPath: 'url(#wavyMask)' }}
         >
           <Image
-            src="/images/img-login.png"
+            src="/images/img-login.svg"
             alt="Login background"
             fill
             sizes="50vw"
