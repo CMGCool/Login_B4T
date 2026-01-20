@@ -342,7 +342,7 @@ export default function SuperAdminTestingPage() {
       pembayaran: Number(r.pembayaran ?? 0),
     }));
 
-    setRows(mapped); // ⬅️ INI YANG BENAR
+    setRows(mapped); 
 
     // reset file input
     setFileLayanan(null);
