@@ -827,7 +827,7 @@ curl -X POST http://localhost:8000/api/logout \
 
 ---
 
-## � Payment System - BNI eCollection
+## Payment System - BNI eCollection
 
 ### Overview
 Backend ini terintegrasi dengan **BNI eCollection API v3.0.3** untuk sistem pembayaran Virtual Account (VA).
@@ -841,11 +841,11 @@ Edit `.env`:
 # BNI eCollection (Development)
 BNI_CLIENT_ID=your_client_id
 BNI_SECRET_KEY=your_secret_key
-BNI_API_URL=https://apibeta.bni-ecollection.com/
+BNI_API_URL=gunakan endpoint untuk development yang diberikan oleh BNI
 BNI_PREFIX=your_va_prefix
 
 # Untuk Production, ubah ke:
-# BNI_API_URL=https://api.bni-ecollection.com/
+# BNI_API_URL=gunakan endpoint untuk production yang diberikan oleh BNI
 ```
 
 ### Database Schema
