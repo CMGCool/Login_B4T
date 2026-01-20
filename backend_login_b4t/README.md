@@ -1350,66 +1350,6 @@ Check `storage/logs/laravel.log` untuk verify:
 [timestamp] local.INFO: BNI Callback - Payment Updated {"trx_id":"TRX-4-...","status":"paid",...}
 ```
 
----
-
-### Development Testing Flow (dengan ngrok)
-
-#### Setup
-
-1. **Install ngrok** (https://ngrok.com)
-
-2. **Expose local server:**
-```bash
-ngrok http 8000
-```
-
-Output:
-```
-Forwarding: https://xxxxx-xx-xxx.ngrok.io -> http://localhost:8000
-```
-
-3. **Register callback URL ke BNI Development:**
-   - Callback URL: `https://xxxxx-xx-xxx.ngrok.io/api/bni/callback`
-   - Contact BNI support untuk whitelist
-
-#### Testing Steps
-
-**Step 1: Create Transaction**
-```bash
-curl -X POST http://localhost:8000/api/payments \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "layanan_id": 1,
-    "amount": 100000
-  }'
-```
-
-Response: Get `trx_id` dan `virtual_account`
-
-**Step 2: Test Callback (Manual)**
-```bash
-curl -X POST http://localhost:8000/api/bni/test-callback \
-  -H "Authorization: Bearer {admin_token}" \
-  -H "Content-Type: application/json"
-```
-
-Copy `test_payload.body`, kirim ke `/api/bni/callback`
-
-**Step 3: Verify**
-```bash
-# Check database
-SELECT * FROM payments WHERE trx_id = 'TRX-4-xxx';
-# Status harus: paid
-
-# Check logs
-tail -f storage/logs/laravel.log
-```
-
-**Step 4: BNI Test Callback (Real)**
-- Minta BNI kirim test callback ke: `https://xxxxx-xx-xxx.ngrok.io/api/bni/callback`
-- Verify logs & database update otomatis
-
 #### Production Callback Flow
 
 Tidak berbeda dari development:
