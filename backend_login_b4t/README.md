@@ -11,7 +11,7 @@ Backend RESTful API untuk sistem autentikasi dengan role-based access control, d
 - [Setup Instructions](#-setup-instructions)
 - [Configuration](#-configuration)
 - [API Documentation](#-api-documentation)
-- [Payment System (BNI eCollection)](#payment-system--bni-ecollection)
+- [Payment System (BNI eCollection)](#-payment-system--bni-ecollection)
 - [Roles & Permissions](#-roles--permissions)
 - [Testing](#-testing)
 - [Troubleshooting](#-troubleshooting)
