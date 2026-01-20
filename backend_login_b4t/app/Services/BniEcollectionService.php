@@ -95,42 +95,19 @@ class BniEcollectionService
     public function updateBilling(array $input)
     {
         $payload = array_filter([
+            'type'      => 'updatebilling',
+            'client_id' => $this->clientId,
             'trx_id' => $input['trx_id'],
             'trx_amount' => $input['trx_amount'] ?? null,
-            'datetime_expired_iso8601' => $input['datetime_expired_iso8601'] ?? null,
             'customer_name' => $input['customer_name'] ?? null,
+            'customer_email' => $input['customer_email'] ?? null,
+            'customer_phone' => $input['customer_phone'] ?? null,
+            'datetime_expired_iso8601' => $input['datetime_expired_iso8601'] ?? null,
             'description' => $input['description'] ?? null,
         ], fn($v) => !is_null($v));
 
-        // Log::info('BNI CLEAN PAYLOAD', $payload);
-
         return $this->send($payload);
     }
-
-    // public function updateBilling(array $payload)
-    // {
-    //     /**
-    //      * Payload wajib:
-    //      * - trx_id
-    //      * Payload optional:
-    //      * - trx_amount
-    //      * - datetime_expired_iso8601
-    //      * - customer_name
-    //      * - description
-    //      */
-
-    //     if (empty($payload['trx_id'])) {
-    //         throw new \Exception('trx_id is required');
-    //     }
-
-    //     return $this->send([
-    //         'trx_id' => $payload['trx_id'],
-    //         'trx_amount' => $payload['trx_amount'] ?? null,
-    //         'datetime_expired_iso8601' => $payload['datetime_expired_iso8601'] ?? null,
-    //         'customer_name' => $payload['customer_name'] ?? null,
-    //         'description' => $payload['description'] ?? null,
-    //     ]);
-    // }
 
     /**
      * INQUIRY BILLING
@@ -142,5 +119,46 @@ class BniEcollectionService
             'client_id' => $this->clientId,
             'trx_id'   => $trxId
         ]);
+    }
+
+    public function processCallback(string $encryptedData): array
+    {
+        try {
+            // Decrypt data dari BNI
+            $decrypted = \BniEnc::decrypt(
+                $encryptedData,
+                $this->clientId,
+                $this->secretKey
+            );
+
+            Log::info('BNI CALLBACK DECRYPTED', $decrypted);
+
+            // Validasi decryption
+            if ($decrypted === null) {
+                Log::error('BNI CALLBACK - Decryption failed', [
+                    'encrypted_data' => $encryptedData
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'Failed to decrypt callback data'
+                ];
+            }
+
+            // Return decrypted data untuk controller yang handle
+            return [
+                'success' => true,
+                'data' => $decrypted
+            ];
+        } catch (\Exception $e) {
+            Log::error('BNI CALLBACK - Exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
     }
 }

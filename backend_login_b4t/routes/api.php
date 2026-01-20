@@ -7,12 +7,15 @@ use App\Http\Controllers\Api\SuperAdminController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\DashboardStatsController;
+use App\Http\Controllers\Api\DashboardLayananController;
 use App\Http\Controllers\Api\LayananController;
 use App\Http\Controllers\Api\TargetsController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\BniTestController;
+use App\Http\Controllers\Api\PaymentController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +41,14 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 
 // Get current user profile (untuk semua role)
 Route::middleware('auth:sanctum')->get('/me', [UserManagementController::class, 'getMe']);
+
+// Payment endpoints for user (create transaction, view transactions)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/payments', [PaymentController::class, 'store']);
+    Route::get('/payments', [PaymentController::class, 'index']);
+    Route::get('/payments/{trx_id}', [PaymentController::class, 'show']);
+    Route::put('/payments/{trx_id}', [PaymentController::class, 'update']);
+});
 
 //Endpoint untuk super admin melihat semua user dan admin
 Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
@@ -91,8 +102,8 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
 
 // Endpoint untuk dashboard layanan (hanya admin dan super_admin)
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
-    Route::get('/dashboard-layanan/usage', [App\Http\Controllers\Api\DashboardLayananController::class, 'layananUsage']);
-    Route::get('/dashboard-layanan/biaya-per-minggu', [App\Http\Controllers\Api\DashboardLayananController::class, 'biayaPerMinggu']);
+    Route::get('/dashboard-layanan/usage', [DashboardLayananController::class, 'layananUsage']);
+    Route::get('/dashboard-layanan/biaya-per-minggu', [DashboardLayananController::class, 'biayaPerMinggu']);
 });
 
 // Endpoint untuk CRUD target (hanya admin dan super_admin)
@@ -112,9 +123,19 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::delete('/logs/cleanup', [LogController::class, 'cleanup']);
 });
 
-// Endpoint untuk testing BNI eCollection (sementara hanya super_admin)
-Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
-    Route::post('/bni/create', [BniTestController::class, 'create']);
+// Endpoint untuk testing BNI eCollection (untuk admin dan super admin)
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    //Endpoint untuk inquiry billing, dipake juga untuk validasi transaksi secara manual
     Route::post('/bni/inquiry', [BniTestController::class, 'inquiry']);
+    //Optional endpoint untuk create billing dan update billing secara cepat
+    Route::post('/bni/create', [BniTestController::class, 'create']);
     Route::post('/bni/update-billing', [BniTestController::class, 'update']);
+
+    // Test callback - ONLY for local/staging (disable di production)
+    if (!app()->environment('production')) {
+        Route::post('/bni/test-callback', [BniTestController::class, 'testCallback']);
+    }
 });
+
+// Callback dari BNI - PUBLIC (tidak perlu auth)
+Route::post('/bni/callback', [BniTestController::class, 'callback']);
