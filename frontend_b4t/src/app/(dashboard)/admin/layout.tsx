@@ -3,15 +3,16 @@ import AdminSidebar from "@/components/layouts/AdminSidebar";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="flex">
-        {/* Sidebar admin */}
-        <div className="w-[260px] shrink-0">
+    <div className="h-screen bg-white overflow-hidden">
+      <div className="flex h-full">
+        <div
+          className="shrink-0 h-full transition-[width] duration-300"
+          style={{ width: "var(--sidebar-w, 280px)" }}
+        >
           <AdminSidebar />
         </div>
 
-        {/* Content */}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 h-full overflow-y-auto">{children}</main>
       </div>
     </div>
   );

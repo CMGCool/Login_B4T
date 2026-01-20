@@ -202,7 +202,7 @@ export default function SignupPage() {
             style={{ clipPath: 'url(#robotMask)' }}
           >
             <Image
-              src="/images/register.png"
+              src="/images/register.svg"
               alt="Register background"
               fill
               sizes="50vw"
