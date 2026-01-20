@@ -832,17 +832,17 @@ curl -X POST http://localhost:8000/api/logout \
 ### Overview
 Backend ini terintegrasi dengan **BNI eCollection API v3.0.3** untuk sistem pembayaran Virtual Account (VA).
 
-**Dokumentasi:** Lihat [BNI_eCollection_API_v3.0.3_FULL.txt](BNI_eCollection_API_v3.0.3_FULL.txt)
+**Dokumentasi:** Lihat BNI_eCollection_API_v3.0.3
 
 ### BNI eCollection Configuration
 
 Edit `.env`:
 ```env
 # BNI eCollection (Development)
-BNI_CLIENT_ID=27018
-BNI_SECRET_KEY=158bd241f79dfaa16bb376d476c201ae
+BNI_CLIENT_ID=your_client_id
+BNI_SECRET_KEY=your_secret_key
 BNI_API_URL=https://apibeta.bni-ecollection.com/
-BNI_PREFIX=989
+BNI_PREFIX=your_va_prefix
 
 # Untuk Production, ubah ke:
 # BNI_API_URL=https://api.bni-ecollection.com/
@@ -1275,8 +1275,8 @@ Authorization: Bearer {token}
         "url": "/api/bni/callback",
         "method": "POST",
         "body": {
-            "client_id": "27018",
-            "prefix": "989",
+            "client_id": "your_client_id",
+            "prefix": "your_va_prefix",
             "data": "encrypted_data_here"
         }
     },
@@ -1321,8 +1321,8 @@ Authorization: Bearer {token}
 **Body (dari BNI):**
 ```json
 {
-    "client_id": "27018",
-    "prefix": "989",
+    "client_id": "your_client_id",
+    "prefix": "your_va_prefix",
     "data": "encrypted_callback_from_bni"
 }
 ```
