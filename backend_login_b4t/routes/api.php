@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\TargetsController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\PrintController;
+use App\Http\Controllers\ImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -109,4 +112,23 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     Route::get('/logs', [LogController::class, 'index']);
     Route::get('/logs/{id}', [LogController::class, 'show']);
     Route::delete('/logs/cleanup', [LogController::class, 'cleanup']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
+    // Layanan
+    Route::get('/export/layanan/excel', [ExportController::class, 'exportLayanan']);
+    Route::get('/export/layanan/pdf', [ExportController::class, 'layananPdf']);
+    Route::get('/export/layanan/csv', [ExportController::class, 'exportCsv']);
+    // Print
+    Route::get('/print/layanan', [PrintController::class, 'layananPrint']);
+    Route::get('/print/target', [PrintController::class, 'revenuePrint']);
+    // Revenue
+    Route::get('/export/target/excel', [ExportController::class, 'exportRevenue']);
+    Route::get('/export/target/pdf', [ExportController::class, 'revenuePdf']);
+    Route::get('/export/target/csv', [ExportController::class, 'exportCsvRevenue']);
+    //Import
+    Route::post('/import/target/csv', [ImportController::class, 'importCsvRevenue']);
+    Route::post('/import/target', [ImportController::class, 'importRevenue']);
+    Route::post('/import/target/excel', [ImportController::class, 'importExcelRevenue']);
+    Route::post('/import/layanan', [ImportController::class, 'importLayanan']);
 });

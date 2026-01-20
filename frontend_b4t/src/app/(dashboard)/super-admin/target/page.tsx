@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { Pencil, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AiFillFileExcel } from "react-icons/ai";
+import { FaFilePdf, FaFileCsv } from "react-icons/fa";
+import { IoPrintSharp } from "react-icons/io5";
 
 type BackendTarget = {
   id: number | string;
@@ -68,6 +72,24 @@ export default function TargetPage() {
     );
   }
 
+  const [file, setFile] = useState<File | null>(null);
+  const [loadingImport, setLoadingImport] = useState(false);
+
+
+  const handleDownload = (type: "excel" | "pdf" | "csv" | "print") => {
+  let url = "";
+
+  if (type === "excel") {
+    url = "http://localhost:8000/api/export/target/excel";
+  } else if (type === "pdf") {
+    url = "http://localhost:8000/api/export/target/pdf";
+  } else if (type === "csv") {
+    url = "http://localhost:8000/api/export/target/csv";
+  } else if (type === "print") {
+    url = "http://localhost:8000/api/print/target";
+  }
+  window.open(url, "_blank");
+};
   // backend apiResource('target') => GET /api/target, PUT /api/target/{id}
   const ENDPOINT_LIST = "/target";
   const ENDPOINT_UPDATE = (id: number | string) => `/target/${id}`;
@@ -180,7 +202,45 @@ export default function TargetPage() {
       setErr(msg);
       showToast(msg);
     }
+
+    
   };
+
+  const handleImportRevenue = async () => {
+  if (!file) {
+    alert("Pilih file terlebih dahulu");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    setLoadingImport(true);
+
+    const res = await axios.post(
+      "http://localhost:8000/api/import/target",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // kalau pakai sanctum
+        },
+      }
+    );
+    alert(res.data.message || "Import berhasil 🎉");
+    fetchRevenueData();
+  } catch (err: any) {
+    console.error(err);
+    if (err.response?.data?.message) {
+      alert(err.response.data.message);
+    } else {
+      alert("Import gagal, cek format file");
+    }
+  } finally {
+    setLoadingImport(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-white">
@@ -223,6 +283,57 @@ export default function TargetPage() {
             />
           </div>
         </div>
+
+        <div className="flex gap-2 justify-right ml-auto mb-4">
+            <Button
+              onClick={() => handleDownload("excel")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <AiFillFileExcel className="h-2 w-2"/>
+              Excel
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("pdf")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <FaFilePdf className="h-2 w-2"/>
+              PDF
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("csv")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <FaFileCsv className="h-2 w-2"/>
+              CSV
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("print")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <IoPrintSharp className="h-2 w-2"/>
+              Print
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 mt-4">
+            <input
+              type="file"
+              accept=".xlsx,.csv"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="border p-2 rounded text-sm"
+            />  
+          <button
+            onClick={handleImportRevenue}
+            disabled={!file || loadingImport}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {loadingImport ? "Importing..." : "Import Excel"}
+          </button>
+          </div>
+
 
         {/* Card table */}
         <div className="rounded-2xl border border-gray-200 bg-white">

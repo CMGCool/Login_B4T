@@ -23,42 +23,32 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 type SignUpValues = z.infer<typeof signUpFormSchema>;
-
-/** ✅ ADDED: Centralized signup messages */
 const SIGNUP_MESSAGES = {
   // required fields
   nameRequired: "Name is required.",
   usernameRequired: "Username is required.",
   passwordRequired: "Password is required.",
   emailRequired: "Email is required.",
-
   // username / email
   usernameTaken: "Username is already taken.",
   emailRegistered: "Email is already registered.",
   emailInvalid: "Please enter a valid email address.",
-
   // password
   passwordMin6: "Password must be at least 6 characters long.",
   passwordConfirmMismatch: "Password confirmation does not match.",
-
-  // ✅ ADDED: success messages (optional)
   registeredWaitApproval: "Registration successful. Please wait for admin approval.",
   accountCreated: "Your account has been created successfully.",
-
   // generic
   fillRequired: "Please fill in all required fields.",
   invalidInput: "Invalid input. Please check your data.",
   registerFailed: "Register failed",
 } as const;
 
-/** ✅ ADDED: map backend validation into friendly messages */
 function mapSignupServerMessage(raw: unknown): string | null {
   const msg = String(raw ?? "").trim();
   const lower = msg.toLowerCase();
 
   if (!msg) return null;
-
-  // username/email uniqueness
   if (
     lower.includes("username") &&
     (lower.includes("taken") || lower.includes("exists") || lower.includes("already"))
@@ -91,11 +81,8 @@ function mapSignupServerMessage(raw: unknown): string | null {
 
   // required fields
   if (lower.includes("required")) {
-    // kalau backend cuma bilang "is required" tanpa jelas field, pakai generic
     return SIGNUP_MESSAGES.fillRequired;
   }
-
-  // fallback to original message (kalau sudah bagus)
   return msg;
 }
 
@@ -103,10 +90,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // ✅ ADDED: success state
   const [success, setSuccess] = useState<string | null>(null);
-
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpFormSchema),
     defaultValues: {
@@ -122,7 +106,7 @@ export default function SignupPage() {
     try {
       setLoading(true);
       setError(null);
-      setSuccess(null); // ✅ ADDED
+      setSuccess(null); 
 
       await register({
         name: values.name,
@@ -131,9 +115,7 @@ export default function SignupPage() {
         password: values.password,
       });
 
-      // ✅ ADDED: (optional) set success, lalu redirect ke login bawa query success
       setSuccess(SIGNUP_MESSAGES.accountCreated);
-
       router.replace("/auth/Signin?success=registered");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -141,8 +123,6 @@ export default function SignupPage() {
 
         if (status === 422) {
           const errors = (err.response?.data as any)?.errors;
-
-          // ✅ ADDED: ambil error pertama dari Laravel validation dan map ke pesan yang kamu mau
           if (errors && typeof errors === "object") {
             const firstKey = Object.keys(errors)[0];
             const firstMsgRaw = Array.isArray(errors[firstKey])
