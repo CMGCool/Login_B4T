@@ -22,6 +22,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:10000',
             'customer_phone' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:255',
+            'expired_at' => 'nullable|date_format:Y-m-d\TH:i:sP', // ISO8601
         ]);
 
         $user = $request->user();
@@ -30,8 +31,11 @@ class PaymentController extends Controller
         // Generate unique trx_id
         $trxId = 'TRX-' . $user->id . '-' . now()->timestamp;
 
+        // Siapkan expired ISO8601 jika ada
+        $expiredIso = $validated['expired_at'] ?? null;
+
         // Call BNI createBilling
-        $response = $bni->createBilling([
+        $payload = [
             'trx_id' => $trxId,
             'trx_amount' => $validated['amount'],
             'billing_type' => 'c', // c = close payment (amount fixed)
@@ -39,7 +43,11 @@ class PaymentController extends Controller
             'customer_email' => $user->email,
             'customer_phone' => $validated['customer_phone'] ?? $user->phone ?? '628123456789',
             'description' => $validated['description'] ?? $layanan->nama_layanan,
-        ]);
+        ];
+        if ($expiredIso) {
+            $payload['datetime_expired_iso8601'] = $expiredIso;
+        }
+        $response = $bni->createBilling($payload);
 
         // Check if BNI success
         if (($response['status'] ?? null) !== '000') {
@@ -51,8 +59,28 @@ class PaymentController extends Controller
         }
 
         $data = $response['data'] ?? [];
+        
+        // Strategy development: Ambil actual expired_at dari BNI via inquiry
+        // Karena BNI Sandbox mengabaikan datetime_expired_iso8601, kita ambil nilai actual dari inquiry
+        $expiredAt = $expiredIso;
+        try {
+            $inquiry = $bni->inquiryBilling($trxId);
+            if (($inquiry['status'] ?? null) === '000' && isset($inquiry['data']['datetime_expired_iso8601'])) {
+                $expiredAt = $inquiry['data']['datetime_expired_iso8601'];
+                Log::info("Expired_at updated from BNI inquiry", [
+                    'trx_id' => $trxId,
+                    'requested' => $expiredIso,
+                    'actual' => $expiredAt
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to get expired_at from BNI inquiry", [
+                'trx_id' => $trxId,
+                'error' => $e->getMessage()
+            ]);
+            // Tetap gunakan expiredIso jika inquiry gagal
+        }
 
-        // Save to database
         $payment = Payment::create([
             'trx_id' => $trxId,
             'virtual_account' => $data['virtual_account'] ?? null,
@@ -65,6 +93,7 @@ class PaymentController extends Controller
             'description' => $validated['description'] ?? $layanan->nama_layanan,
             'billing_type' => 'c',
             'status' => 'pending',
+            'expired_at' => $expiredAt,
             'bni_response' => $response,
         ]);
 
@@ -191,7 +220,7 @@ class PaymentController extends Controller
             'customer_email' => 'nullable|email|max:100',
             'customer_phone' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:255',
-            'datetime_expired_iso8601' => 'nullable|date_format:Y-m-d\TH:i:sP',
+            'expired_at' => 'nullable|date_format:Y-m-d\TH:i:sP', // ISO8601
         ]);
 
         $user = $request->user();
@@ -212,20 +241,21 @@ class PaymentController extends Controller
             'description' => $validated['description'] ?? $payment->description,
         ];
 
-        if (isset($validated['datetime_expired_iso8601'])) {
-            $updateData['datetime_expired_iso8601'] = $validated['datetime_expired_iso8601'];
+        // expired_at dikirim ke BNI sebagai datetime_expired_iso8601 jika ada
+        if (isset($validated['expired_at'])) {
+            $updateData['datetime_expired_iso8601'] = $validated['expired_at'];
         }
 
         $response = $bni->updateBilling($updateData);
 
         // Even if BNI update fails/partial, we update our database
-        // This way customer data is always available from our DB
         $payment->update([
             'amount' => $validated['amount'] ?? $payment->amount,
             'customer_name' => $validated['customer_name'] ?? $payment->customer_name,
             'customer_email' => $validated['customer_email'] ?? $payment->customer_email,
             'customer_phone' => $validated['customer_phone'] ?? $payment->customer_phone,
             'description' => $validated['description'] ?? $payment->description,
+            'expired_at' => $validated['expired_at'] ?? $payment->expired_at,
         ]);
 
         Log::info('Payment Updated', [
