@@ -20,6 +20,7 @@ class PaymentController extends Controller
         $validated = $request->validate([
             'layanan_id' => 'required|exists:layanan,id',
             'amount' => 'required|numeric|min:10000',
+            'customer_phone' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -36,7 +37,7 @@ class PaymentController extends Controller
             'billing_type' => 'c', // c = close payment (amount fixed)
             'customer_name' => $user->name,
             'customer_email' => $user->email,
-            'customer_phone' => $user->phone ?? '628123456789',
+            'customer_phone' => $validated['customer_phone'] ?? $user->phone ?? '628123456789',
             'description' => $validated['description'] ?? $layanan->nama_layanan,
         ]);
 
@@ -59,7 +60,7 @@ class PaymentController extends Controller
             'layanan_id' => $layanan->id,
             'customer_name' => $user->name,
             'customer_email' => $user->email,
-            'customer_phone' => $user->phone,
+            'customer_phone' => $validated['customer_phone'] ?? $user->phone ?? '628123456789',
             'amount' => $validated['amount'],
             'description' => $validated['description'] ?? $layanan->nama_layanan,
             'billing_type' => 'c',
@@ -125,7 +126,7 @@ class PaymentController extends Controller
                 'description' => $payment->description,
                 'customer_name' => $payment->customer_name,
                 'customer_email' => $payment->customer_email,
-                'customer_phone' => $payment->customer_phone,
+                'customer_phone' => $payment->customer_phone ?? '628123456789',
                 'layanan' => $payment->layanan ? [
                     'id' => $payment->layanan->id,
                     'nama' => $payment->layanan->nama_layanan,
@@ -160,7 +161,7 @@ class PaymentController extends Controller
                     'description' => $payment->description,
                     'customer_name' => $payment->customer_name,
                     'customer_email' => $payment->customer_email,
-                    'customer_phone' => $payment->customer_phone,
+                    'customer_phone' => $payment->customer_phone ?? '628123456789',
                     'layanan' => $payment->layanan ? [
                         'id' => $payment->layanan->id,
                         'nama' => $payment->layanan->nama_layanan,
