@@ -1,25 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-import { LayoutGrid, Users, Settings, LogOut, UserCircle2 } from "lucide-react";
+import {
+  LayoutGrid,
+  Users,
+  Settings,
+  LogOut,
+  UserCircle2,
+  Menu,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { FaServicestack } from "react-icons/fa";
 import { FaArrowTrendUp } from "react-icons/fa6";
+import Image from "next/image";
 
 type MeResponse = {
   name?: string | null;
   email?: string | null;
-  role?: string | null;
+  role?: "super_admin" | "admin" | "user" | string | null;
 };
 
 function roleLabel(role?: string | null) {
   const r = String(role ?? "").toLowerCase();
+  if (r === "super_admin") return "Super admin";
   if (r === "admin") return "Admin";
-  if (r === "super_admin") return "Super Admin";
   if (r === "user") return "User";
   return role ? String(role) : "Unknown";
 }
+
+type NavItem = {
+  key: string;
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  active: boolean;
+};
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -31,22 +47,21 @@ export default function AdminSidebar() {
     role: null,
   });
 
+  const [collapsed, setCollapsed] = useState(false);
 
-
-  // active states (ADMIN)
   const isDashboard = pathname.startsWith("/admin/dashboard");
   const isUsers = pathname.startsWith("/admin/users");
   const isSettings = pathname.startsWith("/admin/settings");
-  const isTesting = pathname.startsWith("/admin/layanan");
+  const isLayanan = pathname.startsWith("/admin/layanan");
   const isTarget = pathname.startsWith("/admin/target");
 
-  const itemClass = (active: boolean) =>
-    [
-      "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
-      active
-        ? "bg-gray-100 text-gray-900"
-        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-    ].join(" ");
+  useEffect(() => {
+    const w = collapsed ? "76px" : "280px";
+    document.documentElement.style.setProperty("--sidebar-w", w);
+    return () => {
+      document.documentElement.style.removeProperty("--sidebar-w");
+    };
+  }, [collapsed]);
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -59,7 +74,7 @@ export default function AdminSidebar() {
           role: data?.role ?? null,
         });
       } catch {
-        // fallback aman
+        setMe({ name: null, email: null, role: null });
       }
     };
     fetchMe();
@@ -75,102 +90,169 @@ export default function AdminSidebar() {
     }
   };
 
+  const navItems: NavItem[] = useMemo(
+    () => [
+      {
+        key: "dashboard",
+        label: "Dashboard",
+        href: "/admin/dashboard",
+        icon: <LayoutGrid className="h-[18px] w-[18px]" />,
+        active: isDashboard,
+      },
+      {
+        key: "users",
+        label: "Users",
+        href: "/admin/users",
+        icon: <Users className="h-[18px] w-[18px]" />,
+        active: isUsers,
+      },
+      {
+        key: "layanan",
+        label: "Testing",
+        href: "/admin/layanan",
+        icon: <FaServicestack className="h-[18px] w-[18px]" />,
+        active: isLayanan,
+      },
+      {
+        key: "target",
+        label: "Revenue Target",
+        href: "/admin/target",
+        icon: <FaArrowTrendUp className="h-[18px] w-[18px]" />,
+        active: isTarget,
+      },
+    ],
+    [isDashboard, isUsers, isLayanan, isTarget]
+  );
+
+  const itemClass = (active: boolean) =>
+    [
+      "w-full flex items-center rounded-lg text-[13px] transition select-none",
+      collapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
+      active
+        ? "bg-slate-100 text-slate-900"
+        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+    ].join(" ");
+
   return (
     <aside
       className={[
-        // ✅ bikin sidebar "nempel" dan tidak ikut scroll konten
-        "fixed left-0 top-0 z-40",
-        // ukuran sidebar (samakan dengan layout konten kamu)
-        "w-[260px]",
-        // tinggi full layar + scroll internal kalau kontennya kepanjangan
-        "h-screen overflow-y-auto",
-        // style existing
-        "bg-white px-6 py-6 flex flex-col border-r border-gray-100",
+        "h-full bg-white border-r border-slate-100 flex flex-col",
+        "transition-all duration-300",
+        collapsed ? "w-[76px]" : "w-[280px]",
       ].join(" ")}
     >
-      {/* Logo */}
-      <div className="text-xl font-semibold text-gray-900 mb-8">B4T</div>
-
-      {/* Menu Admin: hanya Dashboard + Users */}
-      <nav className="space-y-1">
-        <button
-          type="button"
-          onClick={() => router.push("/admin/dashboard")}
-          className={itemClass(isDashboard)}
-        >
-          <LayoutGrid className="h-4 w-4" />
-          Dashboard
-        </button>
-
-        <button
-          type="button"
-          onClick={() => router.push("/admin/users")}
-          className={itemClass(isUsers)}
-        >
-          <Users className="h-4 w-4" />
-          Users
-        </button>
+      <div
+        className={[
+          "flex items-center",
+          collapsed ? "justify-center" : "justify-between",
+          "px-5 py-4",
+        ].join(" ")}
+      >
+        {!collapsed && (
+          <Image
+            src="/images/Logo-B4T.png"
+            alt="B4T"
+            width={54}
+            height={32}
+            className="h-auto w-auto"
+            priority
+          />
+        )}
 
         <button
           type="button"
-          onClick={() => router.push("/admin/layanan")}
-          className={itemClass(isTesting)}
+          onClick={() => setCollapsed((v) => !v)}
+          className="p-2 rounded-lg hover:bg-slate-50 text-slate-700"
+          aria-label="Toggle sidebar"
+          title="Toggle sidebar"
         >
-          < FaServicestack className="h-4 w-4" />
-          Layanan
+          <Menu className="h-5 w-5" />
         </button>
+      </div>
 
-        <button
-          type="button"
-          onClick={() => router.push("/admin/target")}
-          className={itemClass(isTarget)}
-        >
-          <FaArrowTrendUp className="h-4 w-4" />
-          Revenue Target
-        </button>
+      <nav className={[collapsed ? "px-2" : "px-5", "pt-6"].join(" ")}>
+        <div className="space-y-1">
+          {navItems.map((it) => (
+            <button
+              key={it.key}
+              type="button"
+              onClick={() => router.push(it.href)}
+              className={itemClass(it.active)}
+              title={collapsed ? it.label : undefined}
+            >
+              <span className="shrink-0 text-slate-700">{it.icon}</span>
+              {!collapsed && <span className="truncate">{it.label}</span>}
+            </button>
+          ))}
+        </div>
       </nav>
 
       <div className="flex-1" />
 
-      {/* Settings */}
-      <div className="pt-6 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={() => router.push("/admin/settings")}
-          className={itemClass(isSettings)}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </button>
+      <div className={collapsed ? "px-2" : "px-5"}>
+        <div className="border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={() => router.push("/admin/settings")}
+            className={itemClass(isSettings)}
+            title={collapsed ? "Settings" : undefined}
+          >
+            <Settings className="h-[18px] w-[18px]" />
+            {!collapsed && <span className="truncate">Settings</span>}
+          </button>
+        </div>
       </div>
 
-      {/* Profile + Logout */}
-      <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center">
-            <UserCircle2 className="h-5 w-5 text-gray-600" />
-          </div>
+      <div className={[collapsed ? "px-2 pb-4" : "px-5 pb-5", "mt-4"].join(" ")}>
+        <div className="border-t border-slate-100 pt-4">
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                <UserCircle2 className="h-6 w-6 text-slate-600" />
+              </div>
 
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {me.name || "Account"}
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              {roleLabel(me.role)}
-            </p>
-            <p className="text-xs text-gray-500 truncate">{me.email || "-"}</p>
-          </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="p-2 rounded-lg transition text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                  <UserCircle2 className="h-6 w-6 text-slate-600" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-slate-900 truncate">
+                    {me.name || "Account"}
+                  </p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {roleLabel(me.role)}
+                  </p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {me.email || "-"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                className="p-2 rounded-lg transition text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Logout merah */}
-        <button
-          type="button"
-          onClick={onLogout}
-          className="p-2 rounded-md hover:bg-red-50 text-red-600 hover:text-red-700 transition"
-          title="Logout"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </aside>
   );
