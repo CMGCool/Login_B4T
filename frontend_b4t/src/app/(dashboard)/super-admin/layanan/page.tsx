@@ -5,6 +5,10 @@ import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Pencil, Trash2, Plus, X } from "lucide-react";
+import { AiFillFileExcel } from "react-icons/ai";
+import { FaFileCsv, FaFilePdf } from "react-icons/fa";
+import { IoPrintSharp } from "react-icons/io5";
+import axios from "axios";
 
 type BackendLayanan = {
   id: number | string;
@@ -13,9 +17,7 @@ type BackendLayanan = {
   pembayaran?: number | string | null; // ✅ integer
 };
 
-/* =======================
-   ✅ UI TYPES
-======================= */
+
 type UiLayanan = {
   id: number | string;
   nama_layanan: string;
@@ -32,9 +34,6 @@ export default function SuperAdminTestingPage() {
 
   const [rows, setRows] = useState<UiLayanan[]>([]);
 
-  /* =======================
-     ✅ TOAST (SINGLE)
-  ======================= */
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const toastTimer = useRef<number | null>(null);
@@ -64,17 +63,12 @@ export default function SuperAdminTestingPage() {
     );
   }
 
-  /* =======================
-     ✅ ENDPOINTS
-  ======================= */
+
   const ENDPOINT_LIST = "/layanan";
   const ENDPOINT_CREATE = "/layanan";
   const ENDPOINT_UPDATE = (id: number | string) => `/layanan/${id}`;
   const ENDPOINT_DELETE = (id: number | string) => `/layanan/${id}`;
 
-  /* =======================
-     ✅ FETCH LIST
-======================= */
   const fetchLayanan = async () => {
     setLoading(true);
     setError(null);
@@ -109,9 +103,6 @@ export default function SuperAdminTestingPage() {
     fetchLayanan();
   }, []);
 
-  /* =======================
-     ✅ FILTER SEARCH
-======================= */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -126,9 +117,6 @@ export default function SuperAdminTestingPage() {
     });
   }, [search, rows]);
 
-  /* =======================
-     ✅ HELPERS
-======================= */
   function formatIdr(n: number) {
     try {
       return new Intl.NumberFormat("id-ID", {
@@ -152,9 +140,6 @@ export default function SuperAdminTestingPage() {
     });
   }
 
-  /* =========================================================
-     ✅ MODAL ADD DATA
-========================================================= */
   const [openAdd, setOpenAdd] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -203,10 +188,6 @@ export default function SuperAdminTestingPage() {
       setSaving(false);
     }
   }
-
-  /* =========================================================
-     ✅ MODAL EDIT DATA
-     ========================================================= */
   const [openEdit, setOpenEdit] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editing, setEditing] = useState<UiLayanan | null>(null);
@@ -222,6 +203,21 @@ export default function SuperAdminTestingPage() {
     setOpenEdit(true);
     setError(null);
   }
+
+  const handleDownload = (type: "excel" | "pdf" | "csv" | "print") => {
+  let url = "";
+
+  if (type === "excel") {
+    url = "http://localhost:8000/api/export/layanan/excel";
+  } else if (type === "pdf") {
+    url = "http://localhost:8000/api/export/layanan/pdf";
+  } else if (type === "csv") {
+    url = "http://localhost:8000/api/export/layanan/csv";
+  } else if (type === "print") {
+    url = "http://localhost:8000/api/print/layanan";
+  }
+  window.open(url, "_blank");
+};
 
   function closeEditModal() {
     if (editSaving) return;
@@ -269,10 +265,6 @@ export default function SuperAdminTestingPage() {
       setEditSaving(false);
     }
   }
-
-  /* =========================================================
-     ✅ MODAL DELETE DATA
-     ========================================================= */
   const [openDelete, setOpenDelete] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [deleting, setDeleting] = useState<UiLayanan | null>(null);
@@ -310,6 +302,59 @@ export default function SuperAdminTestingPage() {
       setDeleteSaving(false);
     }
   }
+
+  const [fileLayanan, setFileLayanan] = useState<File | null>(null);
+  const [loadingImportLayanan, setLoadingImportLayanan] = useState(false);
+  const handleImportLayanan = async () => {
+  if (!fileLayanan) {
+    alert("Pilih file terlebih dahulu");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileLayanan);
+
+  try {
+    setLoadingImportLayanan(true);
+
+    const res = await axios.post(
+      "http://localhost:8000/api/import/layanan",
+      formData,
+      { withCredentials: true }
+    );
+
+    // notif sukses
+    alert(res.data.message || "Import layanan berhasil 🎉");
+
+    // 🔄 refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
+    const refresh = await api.get("/layanan");
+
+    const raw: BackendLayanan[] = Array.isArray(refresh.data?.data)
+      ? refresh.data.data
+      : Array.isArray(refresh.data)
+        ? refresh.data
+        : [];
+
+    const mapped: UiLayanan[] = raw.map((r) => ({
+      id: r.id,
+      nama_layanan: String(r.nama_layanan ?? "-"),
+      tanggal_layanan: String(r.tanggal_layanan ?? ""),
+      pembayaran: Number(r.pembayaran ?? 0),
+    }));
+
+    setRows(mapped); 
+
+    // reset file input
+    setFileLayanan(null);
+
+  } catch (err: any) {
+    console.error(err);
+    alert(err.response?.data?.message || "Import gagal, cek format file");
+  } finally {
+    setLoadingImportLayanan(false);
+  }
+};
+
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
@@ -370,7 +415,6 @@ export default function SuperAdminTestingPage() {
             <h2 className="text-base font-semibold text-gray-900">
               Testing Service Data
             </h2>
-
             <Button
               type="button"
               onClick={openAddModal}
@@ -378,6 +422,56 @@ export default function SuperAdminTestingPage() {
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Data
+            </Button>
+          </div>
+
+          <div className="flex gap-3 ml-4 mb-3">
+            <Button
+              onClick={() => handleDownload("excel")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <AiFillFileExcel className="h-2 w-2"/>
+              Excel
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("pdf")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <FaFilePdf className="h-2 w-2"/>
+              PDF
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("csv")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <FaFileCsv className="h-2 w-2"/>
+              CSV
+            </Button>
+
+            <Button
+              onClick={() => handleDownload("print")}
+              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+              <IoPrintSharp className="h-2 w-2"/>
+              Print
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 mt-4">
+            <input
+              type="file"
+              accept=".xlsx,.csv"
+              onChange={(e) => setFileLayanan(e.target.files?.[0] || null)}
+              className="border p-2 rounded text-sm"
+            />    
+            <Button
+            onClick={handleImportLayanan}
+            disabled={!fileLayanan || loadingImportLayanan}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+            {loadingImportLayanan ? "Importing..." : "Import Layanan"}
             </Button>
           </div>
 

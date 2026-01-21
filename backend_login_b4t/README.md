@@ -11,6 +11,7 @@ Backend RESTful API untuk sistem autentikasi dengan role-based access control, d
 - [Setup Instructions](#-setup-instructions)
 - [Configuration](#-configuration)
 - [API Documentation](#-api-documentation)
+- [Payment System (BNI eCollection)](#payment-system---bni-ecollection)
 - [Roles & Permissions](#-roles--permissions)
 - [Testing](#-testing)
 - [Troubleshooting](#-troubleshooting)
@@ -826,7 +827,555 @@ curl -X POST http://localhost:8000/api/logout \
 
 ---
 
-## 👥 Roles & Permissions
+## Payment System - BNI eCollection
+
+### Overview
+Backend ini terintegrasi dengan **BNI eCollection API v3.0.3** untuk sistem pembayaran Virtual Account (VA).
+
+**Dokumentasi:** Lihat BNI_eCollection_API_v3.0.3
+
+### BNI eCollection Configuration
+
+Edit `.env`:
+```env
+# BNI eCollection (Development)
+BNI_CLIENT_ID=your_client_id
+BNI_SECRET_KEY=your_secret_key
+BNI_API_URL=gunakan endpoint untuk development yang diberikan oleh BNI
+BNI_PREFIX=your_va_prefix
+
+# Untuk Production, ubah ke:
+# BNI_API_URL=gunakan endpoint untuk production yang diberikan oleh BNI
+```
+
+### Database Schema
+
+Tabel `payments` menyimpan semua transaksi:
+```sql
+- id (Primary Key)
+- trx_id (Unique transaction ID)
+- virtual_account (VA yang di-generate BNI)
+- user_id (User yang membuat transaksi)
+- layanan_id (Service yang dibeli)
+- customer_name, customer_email, customer_phone
+- amount (Nominal pembayaran)
+- billing_type (c = fixed payment)
+- status (pending, paid, expired, failed)
+- payment_ntb (NTB dari BNI saat pembayaran)
+- payment_amount (Nominal yang diterima)
+- paid_at (Waktu pembayaran)
+- bni_response (Response dari BNI saat create billing)
+- bni_callback (Data callback dari BNI saat pembayaran)
+- description, created_at, updated_at
+```
+
+---
+
+### Payment User Endpoints
+
+#### 1. Create Transaction (Create VA)
+**POST** `/api/payments`
+
+User membuat transaksi pembayaran & generate Virtual Account dari BNI.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+    "layanan_id": 1,              // required, ID of service (exist di table layanan)
+    "amount": 100000,             // required, nominal pembayaran (min 10000)
+    "description": "Pembayaran untuk X"  // optional
+}
+```
+
+**Response Success (201):**
+```json
+{
+    "success": true,
+    "message": "Transaction created successfully",
+    "data": {
+        "trx_id": "TRX-4-1768878730",
+        "virtual_account": "9882701826012005",
+        "amount": 100000,
+        "status": "pending",
+        "layanan": {
+            "id": 1,
+            "nama": "Service Name"
+        },
+        "instructions": {
+            "bank": "BNI",
+            "va_number": "9882701826012005",
+            "amount": "Rp 100.000",
+            "steps": [
+                "1. Buka aplikasi mobile banking atau ATM BNI",
+                "2. Pilih menu Transfer > Virtual Account",
+                "3. Masukkan nomor VA: 9882701826012005",
+                "4. Masukkan nominal: Rp 100.000",
+                "5. Konfirmasi pembayaran"
+            ]
+        }
+    },
+    "bni_response": {
+        "status": "000",
+        "data": {
+            "virtual_account": "9882701826012005",
+            "trx_id": "TRX-4-1768878730"
+        }
+    }
+}
+```
+
+**Response Error (422):**
+```json
+{
+    "message": "The given data was invalid.",
+    "errors": {
+        "layanan_id": ["The layanan id field is required."]
+    }
+}
+```
+
+**Postman Testing:**
+1. Set Method: **POST**
+2. URL: `http://localhost:8000/api/payments`
+3. Headers:
+   - `Authorization: Bearer {your_token}`
+   - `Content-Type: application/json`
+4. Body (raw JSON):
+   ```json
+   {
+     "layanan_id": 1,
+     "amount": 100000,
+     "description": "Test payment"
+   }
+   ```
+5. Click Send
+
+---
+
+#### 2. List User Transactions
+**GET** `/api/payments`
+
+Melihat semua transaksi milik user yang login (paginated).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "trx_id": "TRX-4-1768878730",
+            "virtual_account": "9882701826012005",
+            "amount": 100000,
+            "status": "pending",
+            "paid_at": null,
+            "description": "Test payment",
+            "customer_name": "John Doe",
+            "customer_email": "john@example.com",
+            "customer_phone": "628123456789",
+            "layanan": {
+                "id": 1,
+                "nama": "Service Name"
+            },
+            "created_at": "2026-01-20T10:00:00.000000Z",
+            "bni_response": {
+                "status": "000",
+                "data": {...}
+            }
+        }
+    ],
+    "pagination": {
+        "total": 10,
+        "per_page": 10,
+        "current_page": 1,
+        "last_page": 1
+    }
+}
+```
+
+**Postman Testing:**
+1. Method: **GET**
+2. URL: `http://localhost:8000/api/payments`
+3. Headers: `Authorization: Bearer {your_token}`
+4. Click Send
+
+---
+
+#### 3. Get Transaction Detail
+**GET** `/api/payments/{trx_id}`
+
+Melihat detail transaksi spesifik termasuk BNI response & callback.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "data": {
+        "trx_id": "TRX-4-1768878730",
+        "virtual_account": "9882701826012005",
+        "amount": 100000,
+        "status": "paid",
+        "paid_at": "2026-01-20T10:15:00.000000Z",
+        "description": "Test payment",
+        "customer_name": "John Doe",
+        "customer_email": "john@example.com",
+        "customer_phone": "628123456789",
+        "layanan": {
+            "id": 1,
+            "nama": "Service Name"
+        },
+        "created_at": "2026-01-20T10:00:00.000000Z",
+        "bni_response": {
+            "status": "000",
+            "data": {
+                "virtual_account": "9882701826012005",
+                "trx_id": "TRX-4-1768878730"
+            }
+        },
+        "bni_callback": {
+            "trx_id": "TRX-4-1768878730",
+            "virtual_account": "9882701826012005",
+            "trx_amount": "100000.00",
+            "payment_amount": "100000.00",
+            "payment_ntb": "NTB20260120101500",
+            "datetime_payment_iso8601": "2026-01-20T10:15:00+07:00",
+            "va_status": "2"
+        }
+    }
+}
+```
+
+**Postman Testing:**
+1. Method: **GET**
+2. URL: `http://localhost:8000/api/payments/TRX-4-1768878730`
+3. Headers: `Authorization: Bearer {your_token}`
+4. Click Send
+
+---
+
+#### 4. Update Transaction
+**PUT** `/api/payments/{trx_id}`
+
+Update transaksi (nominal, customer data, expired date) sebelum dibayar.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body (semua optional, kirim yang mau diubah):**
+```json
+{
+    "amount": 150000,
+    "customer_name": "John Doe Updated",
+    "customer_email": "john.updated@example.com",
+    "customer_phone": "628987654321",
+    "description": "Updated description",
+    "datetime_expired_iso8601": "2026-01-25T23:59:59+07:00"
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "message": "Transaction updated successfully",
+    "data": {
+        "trx_id": "TRX-4-1768878730",
+        "virtual_account": "9882701826012005",
+        "amount": 150000,
+        "customer_name": "John Doe Updated",
+        "customer_email": "john.updated@example.com",
+        "customer_phone": "628987654321",
+        "description": "Updated description",
+        "status": "pending"
+    },
+    "bni_response": {
+        "status": "000"
+    },
+    "note": "Customer data saved in database. BNI sandbox may not support all fields."
+}
+```
+
+**Important Notes:**
+- Hanya bisa update transaksi dengan status `pending`
+- Data tersimpan di database kita meskipun BNI sandbox tidak support
+- VA number tidak bisa diubah
+
+**Postman Testing:**
+1. Method: **PUT**
+2. URL: `http://localhost:8000/api/payments/TRX-4-1768878730`
+3. Headers:
+   - `Authorization: Bearer {your_token}`
+   - `Content-Type: application/json`
+4. Body (raw JSON):
+   ```json
+   {
+     "amount": 150000,
+     "customer_name": "John Updated"
+   }
+   ```
+5. Click Send
+
+---
+
+### BNI Testing Endpoints (Admin/Super Admin Only)
+
+#### 1. Create Billing (Testing)
+**POST** `/api/bni/create`
+
+Testing endpoint untuk membuat billing langsung di BNI (tanpa user flow).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+    "trx_amount": "100000",
+    "billing_type": "c",
+    "customer_name": "John Test",
+    "customer_email": "test@example.com",
+    "customer_phone": "628123456789",
+    "description": "Testing billing"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "000",
+    "data": {
+        "virtual_account": "9882701826012001",
+        "trx_id": "INV-DEV-1768878730"
+    }
+}
+```
+
+---
+
+#### 2. Update Billing (Testing)
+**POST** `/api/bni/update-billing`
+
+Testing endpoint untuk update billing.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+    "trx_id": "INV-DEV-1768878730",
+    "trx_amount": "150000",
+    "customer_name": "John Updated",
+    "customer_email": "john@example.com",
+    "customer_phone": "628123456789"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "000",
+    "message": "Billing updated successfully"
+}
+```
+
+---
+
+#### 3. Inquiry Billing (Testing & Reconciliation)
+**POST** `/api/bni/inquiry`
+
+Check status billing dari BNI (untuk reconciliation atau debugging).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+    "trx_id": "INV-DEV-1768878730"
+}
+```
+
+**Response:**
+```json
+{
+    "status": "000",
+    "data": {
+        "trx_id": "INV-DEV-1768878730",
+        "virtual_account": "9882701826012001",
+        "trx_amount": "150000",
+        "customer_name": "John Updated",
+        "customer_email": "john@example.com",
+        "customer_phone": "628123456789",
+        "billing_type": "c",
+        "va_status": "1",
+        "payment_ntb": null,
+        "payment_amount": "0",
+        "datetime_created_iso8601": "2026-01-20T10:00:00+07:00",
+        "datetime_payment_iso8601": null
+    }
+}
+```
+
+**VA Status:**
+- `1` = Active / Unpaid
+- `2` = Paid / Inactive
+
+---
+
+#### 4. Test Callback (Development Only)
+**POST** `/api/bni/test-callback`
+
+Generate encrypted callback payload untuk testing (hanya di non-production environment).
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters (optional):**
+```
+?trx_id=TRX-4-1768878730
+&va_status=2
+&payment_amount=100000
+```
+
+**Response:**
+```json
+{
+    "message": "Test callback payload created. Use the encrypted_data below to test callback endpoint.",
+    "test_payload": {
+        "url": "/api/bni/callback",
+        "method": "POST",
+        "body": {
+            "client_id": "your_client_id",
+            "prefix": "your_va_prefix",
+            "data": "encrypted_data_here"
+        }
+    },
+    "sample_data": {
+        "trx_id": "TRX-4-1768878730",
+        "virtual_account": "9882701826012005",
+        "trx_amount": "100000.00",
+        "payment_amount": "100000.00",
+        "payment_ntb": "NTB20260120101500",
+        "va_status": "2"
+    },
+    "instructions": [
+        "1. Copy the test_payload above",
+        "2. POST it to /api/bni/callback endpoint",
+        "3. You should get response: {\"status\": \"000\"}",
+        "4. Check database: payment status should change to \"paid\"",
+        "5. Check logs: storage/logs/laravel.log"
+    ]
+}
+```
+
+**Postman Testing:**
+1. Method: **POST**
+2. URL: `http://localhost:8000/api/bni/test-callback?trx_id=TRX-4-1768878730`
+3. Headers: `Authorization: Bearer {your_admin_token}`
+4. Copy `test_payload.body`
+5. Create new request:
+   - Method: **POST**
+   - URL: `http://localhost:8000/api/bni/callback`
+   - Body (raw JSON): Paste `test_payload.body`
+6. Send → Response should be `{"status": "000"}`
+
+---
+
+### BNI Callback Endpoint (Public)
+
+#### Callback from BNI
+**POST** `/api/bni/callback`
+
+**Public endpoint** - Menerima callback dari BNI saat pembayaran terdeteksi.
+
+**Body (dari BNI):**
+```json
+{
+    "client_id": "your_client_id",
+    "prefix": "your_va_prefix",
+    "data": "encrypted_callback_from_bni"
+}
+```
+
+**Response (200):**
+```json
+{
+    "status": "000"
+}
+```
+
+**What Happens:**
+1. Backend decrypt callback
+2. Validate va_status = 2 (paid)
+3. Find payment di database
+4. Update status: pending → paid
+5. Save payment details (payment_ntb, payment_amount, bni_callback)
+6. (Optional) Send email notification
+7. Return 000 to BNI (stop retry)
+
+**Logs:**
+Check `storage/logs/laravel.log` untuk verify:
+```
+[timestamp] local.INFO: BNI Callback Received {"trx_id":"TRX-4-...","va_status":"2",...}
+[timestamp] local.INFO: BNI Callback - Payment Updated {"trx_id":"TRX-4-...","status":"paid",...}
+```
+
+#### Production Callback Flow
+
+Tidak berbeda dari development:
+```
+User transfer ke VA
+→ BNI detect pembayaran
+→ BNI kirim callback otomatis
+→ Backend update DB
+→ Status berubah paid (real-time)
+```
+
+---
+
+### Important Notes - Payment System
+
+- **Development:** Callback manual via test-endpoint (VA tidak real)
+- **Production:** Callback otomatis dari BNI (VA real, bisa transfer)
+- **Database First:** Data customer tersimpan di DB kita, bukan rely BNI
+- **Idempotent:** Callback bisa di-retry, update DB aman di-execute berkali-kali
+- **Immutable:** Transaksi dengan status paid tidak bisa diubah
+- **Encryption:** BNI library handle AES encryption/decryption
+- **Timestamp:** Validasi ±5 menit untuk security
+
+---
+
+## �👥 Roles & Permissions
 
 | Action | Super Admin | Admin | User |
 |--------|:-----------:|:-----:|:----:|
@@ -1052,6 +1601,11 @@ composer install
 - CORS dikonfigurasi untuk `http://localhost:3000`
 - Semua passwords hashed menggunakan bcrypt
 - Database timestamps dalam UTC
+- **Payment System:**
+  - Virtual Account tersedia di development (fake VA untuk testing)
+  - Production menggunakan real BNI VA (bisa transfer nyata)
+  - Callback dapat ditest dengan ngrok sebelum production deployment
+  - Data customer disimpan di database kita sebagai backup
 
 ---
 
@@ -1077,5 +1631,5 @@ composer install
 
 ---
 
-Last Updated: December 31, 2025
-Version: 1.0.0
+Last Updated: January 20, 2026
+Version: 1.1.0 (Added BNI eCollection Payment Integration)

@@ -40,5 +40,11 @@ return [
         'secret' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
+    'bni' => [
+        'client_id' => env('BNI_CLIENT_ID'),
+        'prefix' => env('BNI_PREFIX'),
+        'secret_key' => env('BNI_SECRET_KEY'),
+        'base_url' => env('BNI_BASE_URL'),
+    ],
 
 ];

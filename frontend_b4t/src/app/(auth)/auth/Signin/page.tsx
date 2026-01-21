@@ -25,8 +25,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type SignInValues = z.infer<typeof signInFormSchema>;
-
-/** ✅ ADDED: Centralized login messages */
 const LOGIN_MESSAGES = {
   invalidCreds: "Invalid username or password.",
   invalidCredsAlt: "The username or password you entered is incorrect.",
@@ -63,14 +61,11 @@ function getLoginErrorMessage(err: unknown): string {
 
   // Network / no response (timeout, CORS, offline, dll.)
   if (!err.response) return LOGIN_MESSAGES.failedLater;
-
-  // Common HTTP status mapping
   if (status === 401) {
     return LOGIN_MESSAGES.invalidCreds;
   }
 
   if (status === 403) {
-    // coba deteksi dari pesan backend 
     if (serverMsg.includes("pending") || serverMsg.includes("approval")) {
       return LOGIN_MESSAGES.pendingApproval;
     }
@@ -83,7 +78,6 @@ function getLoginErrorMessage(err: unknown): string {
     ) {
       return LOGIN_MESSAGES.notApproved;
     }
-    // fallback untuk 403
     return LOGIN_MESSAGES.pendingApproval;
   }
 
@@ -94,8 +88,6 @@ function getLoginErrorMessage(err: unknown): string {
   if (status && status >= 500) {
     return LOGIN_MESSAGES.failedLater;
   }
-
-  // If backend sends recognizable messages, map them
   if (
     serverMsg.includes("google") ||
     serverMsg.includes("sso") ||
@@ -167,7 +159,6 @@ export default function SigninPage() {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="h-screen overflow-hidden grid grid-cols-1 lg:grid-cols-[674px_1fr] bg-white">
@@ -355,7 +346,7 @@ export default function SigninPage() {
           style={{ clipPath: 'url(#wavyMask)' }}
         >
           <Image
-            src="/images/img-login.png"
+            src="/images/img-login.svg"
             alt="Login background"
             fill
             sizes="50vw"
