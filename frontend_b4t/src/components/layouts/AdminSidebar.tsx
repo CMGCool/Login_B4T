@@ -108,7 +108,7 @@ export default function AdminSidebar() {
       },
       {
         key: "layanan",
-        label: "Testing",
+        label: "Layanan",
         href: "/admin/layanan",
         icon: <FaServicestack className="h-[18px] w-[18px]" />,
         active: isLayanan,
