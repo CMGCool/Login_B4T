@@ -599,11 +599,11 @@ export default function SuperAdminTestingPage() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mx-0.5">
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
+                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none mr-2"
                 aria-label="Rows per page"
               >
                 {[10, 20, 50].map((size) => (
