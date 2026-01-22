@@ -50,7 +50,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::get('/payments/{trx_id}', [PaymentController::class, 'show']);
+});
+
+// Payment update - only for admin/super_admin
+Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function () {
     Route::put('/payments/{trx_id}', [PaymentController::class, 'update']);
+    Route::get('/admin/payments', [PaymentController::class, 'adminIndex']); // View all payments
 });
 
 //Endpoint untuk super admin melihat semua user dan admin

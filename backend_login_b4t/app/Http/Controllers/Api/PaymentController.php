@@ -211,6 +211,7 @@ class PaymentController extends Controller
     /**
      * Update transaction (amount, customer data, expiry)
      * PUT /api/payments/{trx_id}
+     * Only for admin/super_admin
      */
     public function update(Request $request, $trxId, BniEcollectionService $bni)
     {
@@ -225,11 +226,22 @@ class PaymentController extends Controller
 
         $user = $request->user();
 
-        // Find payment (only user's own transaction)
-        $payment = Payment::where('trx_id', $trxId)
-            ->where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->firstOrFail();
+        // Admin/Super Admin can update any transaction
+        $payment = Payment::where('trx_id', $trxId)->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found'
+            ], 404);
+        }
+
+        if ($payment->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot update transaction. Current status: ' . $payment->status
+            ], 400);
+        }
 
         // Update BNI billing
         $updateData = [
@@ -260,6 +272,7 @@ class PaymentController extends Controller
 
         Log::info('Payment Updated', [
             'trx_id' => $trxId,
+            'updated_by' => $user->role . ' (ID: ' . $user->id . ')',
             'bni_status' => $response['status'] ?? null,
             'db_updated' => true
         ]);
@@ -279,6 +292,51 @@ class PaymentController extends Controller
             ],
             'bni_response' => $response,
             'note' => 'Customer data saved in database. BNI sandbox may not support all fields.'
+        ]);
+    }
+
+    /**
+     * Get all transactions (for admin/super_admin)
+     * GET /api/admin/payments
+     */
+    public function adminIndex(Request $request)
+    {
+        $payments = Payment::with(['layanan', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => $payments->map(function ($payment) {
+                return [
+                    'trx_id' => $payment->trx_id,
+                    'virtual_account' => $payment->virtual_account,
+                    'amount' => $payment->amount,
+                    'status' => $payment->status,
+                    'paid_at' => $payment->paid_at,
+                    'expired_at' => $payment->expired_at,
+                    'description' => $payment->description,
+                    'customer_name' => $payment->customer_name,
+                    'customer_email' => $payment->customer_email,
+                    'customer_phone' => $payment->customer_phone,
+                    'user' => [
+                        'id' => $payment->user->id,
+                        'name' => $payment->user->name,
+                        'email' => $payment->user->email,
+                    ],
+                    'layanan' => $payment->layanan ? [
+                        'id' => $payment->layanan->id,
+                        'nama' => $payment->layanan->nama_layanan,
+                    ] : null,
+                    'created_at' => $payment->created_at,
+                ];
+            }),
+            'pagination' => [
+                'total' => $payments->total(),
+                'per_page' => $payments->perPage(),
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+            ]
         ]);
     }
 }

@@ -99,7 +99,7 @@ class ForgotPasswordController extends Controller
             if (!$otpRecord) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'OTP tidak valid atau tidak ditemukan',
+                    'message' => 'OTP is invalid or not found',
                 ], 404);
             }
 
