@@ -13,9 +13,14 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  SlidersHorizontal,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { IoFilter } from "react-icons/io5";
+import { parseApiError, getFieldError } from "@/lib/error-handler";
 
 type BackendUser = {
   id: number | string;
@@ -43,7 +48,8 @@ function approved(v: any) {
 export default function AdminUsersPage() {
   const router = useRouter();
 
-
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,7 +68,13 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UiUser | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-
+  /* =======================
+     ✅ TOAST (SINGLE, dengan type)
+  ======================= */
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const toastTimer = useRef<number | null>(null);
 
   function getApiErrorMessage(e: any) {
     return (
@@ -73,15 +85,20 @@ export default function AdminUsersPage() {
     );
   }
 
-  /* =======================
-     ✅ TOAST (SINGLE, seperti contoh)
-  ======================= */
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState("");
-  const toastTimer = useRef<number | null>(null);
-
-  function showToast(message: string) {
+  function showToastSuccess(message: string) {
     setToastMsg(message);
+    setToastType("success");
+    setToastOpen(true);
+
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => {
+      setToastOpen(false);
+    }, 3500);
+  }
+
+  function showToastError(message: string) {
+    setToastMsg(message);
+    setToastType("error");
     setToastOpen(true);
 
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
@@ -112,7 +129,7 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      const res = await api.get<any>("/admin/users");
+      const res = await api.get("/admin/users");
 
       const raw: BackendUser[] = Array.isArray(res.data)
         ? res.data
@@ -137,9 +154,9 @@ export default function AdminUsersPage() {
       setUsers(mapped);
     } catch (e: any) {
       const msg =
-        getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
+      getApiErrorMessage(e) || "Gagal mengambil data users dari backend.";
       setError(msg);
-      showToast(msg);
+      showToastError(msg);
     } finally {
       setLoading(false);
     }
@@ -147,7 +164,8 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API_BASE_URL]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -171,15 +189,46 @@ export default function AdminUsersPage() {
     });
   }, [search, users, statusFilter]);
 
+  const [sortKey, setSortKey] = useState<
+    "id" | "name" | "username" | "email" | "status" | null
+  >(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const copy = [...filtered];
+
+    copy.sort((a, b) => {
+      if (sortKey === "id") {
+        const left = Number(a.id);
+        const right = Number(b.id);
+        if (Number.isFinite(left) && Number.isFinite(right)) {
+          return sortDir === "asc" ? left - right : right - left;
+        }
+        const l = String(a.id).toLowerCase();
+        const r = String(b.id).toLowerCase();
+        return sortDir === "asc" ? l.localeCompare(r) : r.localeCompare(l);
+      }
+
+      const left = String(a[sortKey]).toLowerCase();
+      const right = String(b[sortKey]).toLowerCase();
+      return sortDir === "asc"
+        ? left.localeCompare(right)
+        : right.localeCompare(left);
+    });
+
+    return copy;
+  }, [filtered, sortKey, sortDir]);
+
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
-  const totalItems = filtered.length;
+  const totalItems = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize, statusFilter]);
+  }, [search, pageSize, sortKey, sortDir, statusFilter]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -212,11 +261,34 @@ export default function AdminUsersPage() {
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
+    return sorted.slice(start, start + pageSize);
+  }, [sorted, page, pageSize]);
 
   const pageFrom = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const pageTo = Math.min(page * pageSize, totalItems);
+
+  const toggleSort = (
+    key: "id" | "name" | "username" | "email" | "status"
+  ) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDir("asc");
+  };
+
+  const renderSortIcon = (
+    key: "id" | "name" | "username" | "email" | "status"
+  ) => {
+    if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3.5 w-3.5" />
+    ) : (
+      <ArrowDown className="h-3.5 w-3.5" />
+    );
+  };
 
   const StatusBadge = ({ status }: { status: "Approve" | "Pending" }) => {
     const isApproved = status === "Approve";
@@ -260,7 +332,7 @@ export default function AdminUsersPage() {
     setError(null);
 
     try {
-      await api.post<any>(`/approve-user/${selectedUser.id}`);
+      await api.post(`/approve-user/${selectedUser.id}`);
 
       setUsers((prev) =>
         prev.map((u) =>
@@ -268,14 +340,14 @@ export default function AdminUsersPage() {
         )
       );
 
-      showToast("User approved successfully.");
+      showToastSuccess("User berhasil diapprove.");
 
       setIsModalOpen(false);
       setSelectedUser(null);
     } catch (e: any) {
       const msg = getApiErrorMessage(e) || "Gagal approve user. Coba lagi.";
       setError(msg);
-      showToast(msg);
+      showToastError(msg);
     } finally {
       setConfirmLoading(false);
     }
@@ -287,6 +359,7 @@ export default function AdminUsersPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const [savingAdd, setSavingAdd] = useState(false);
   const [showAddPassword, setShowAddPassword] = useState(false);
+  const [addFieldErrors, setAddFieldErrors] = useState<Record<string, string>>({});
   const [addForm, setAddForm] = useState({
     name: "",
     username: "",
@@ -297,6 +370,7 @@ export default function AdminUsersPage() {
   function openAddModal() {
     setOpenAdd(true);
     setError(null);
+    setAddFieldErrors({});
   }
 
   function closeAddModal() {
@@ -305,6 +379,7 @@ export default function AdminUsersPage() {
     setShowAddPassword(false);
     setSavingAdd(false);
     setAddForm({ name: "", username: "", email: "", password: "" });
+    setAddFieldErrors({});
   }
 
   async function createUserPending(payload: {
@@ -313,12 +388,12 @@ export default function AdminUsersPage() {
     email?: string;
     password: string;
   }) {
-    const res = await api.post<any>("/register", payload);
+    const res = await api.post("/register", payload);
     return res.data;
   }
 
   async function approveUserById(userId: number | string) {
-    await api.post<any>(`/approve-user/${userId}`);
+    await api.post(`/approve-user/${userId}`);
   }
 
   async function createUserApproved(payload: {
@@ -336,7 +411,7 @@ export default function AdminUsersPage() {
       return data;
     }
 
-    const res = await api.get<any>("/admin/users");
+    const res = await api.get("/admin/users");
 
     const raw: BackendUser[] = Array.isArray(res.data)
       ? res.data
@@ -362,15 +437,14 @@ export default function AdminUsersPage() {
 
   async function onConfirmAddUser() {
     if (!addForm.name.trim() || !addForm.username.trim() || !addForm.password) {
-      const msg = "Name, Username, dan Password wajib diisi.";
-      setError(msg);
-      showToast(msg);
+      showToastError("Name, Username, dan Password wajib diisi.");
       return;
     }
 
     try {
       setSavingAdd(true);
       setError(null);
+      setAddFieldErrors({});
 
       await createUserApproved({
         name: addForm.name.trim(),
@@ -379,14 +453,15 @@ export default function AdminUsersPage() {
         password: addForm.password,
       });
 
-      showToast("User added successfully.");
+      showToastSuccess("User berhasil ditambahkan.");
 
       closeAddModal();
       await fetchUsers();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      showToast(msg);
+      const { mainMessage, fieldErrors } = parseApiError(e);
+      setError(mainMessage);
+      setAddFieldErrors(fieldErrors);
+      showToastError(mainMessage);
     } finally {
       setSavingAdd(false);
     }
@@ -402,6 +477,7 @@ export default function AdminUsersPage() {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editing, setEditing] = useState<UiUser | null>(null);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [editFieldErrors, setEditFieldErrors] = useState<Record<string, string>>({});
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -416,6 +492,7 @@ export default function AdminUsersPage() {
     setShowEditPassword(false);
     setOpenEdit(true);
     setError(null);
+    setEditFieldErrors({});
   }
 
   function closeEditModal() {
@@ -426,6 +503,7 @@ export default function AdminUsersPage() {
     setShowEditPassword(false);
     setEditSaving(false);
     setEditForm({ name: "", username: "", email: "", password: MASK_PASSWORD });
+    setEditFieldErrors({});
   }
 
   useEffect(() => {
@@ -439,7 +517,7 @@ export default function AdminUsersPage() {
   }, [openEdit, editing]);
 
   async function updateUser(userId: number | string, payload: any) {
-    const res = await api.put<any>(`/users/${userId}`, payload);
+    const res = await api.put(`/users/${userId}`, payload);
     return res.data;
   }
 
@@ -447,17 +525,14 @@ export default function AdminUsersPage() {
     if (!editing) return;
 
     if (!editForm.name.trim() || !editForm.username.trim()) {
-      const msg = "Name dan Username wajib diisi.";
-      setError(msg);
-      showToast(msg);
+      showToastError("Name dan Username wajib diisi.");
       return;
     }
-
-
 
     try {
       setEditSaving(true);
       setError(null);
+      setEditFieldErrors({});
 
       const payload: any = {
         name: editForm.name.trim(),
@@ -475,14 +550,15 @@ export default function AdminUsersPage() {
 
       await updateUser(editing.id, payload);
 
-      showToast("User updated successfully.");
+      showToastSuccess("User berhasil diperbarui.");
 
       closeEditModal();
       await fetchUsers();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      showToast(msg);
+      const { mainMessage, fieldErrors } = parseApiError(e);
+      setError(mainMessage);
+      setEditFieldErrors(fieldErrors);
+      showToastError(mainMessage);
     } finally {
       setEditSaving(false);
     }
@@ -509,14 +585,12 @@ export default function AdminUsersPage() {
   }
 
   async function deleteUser(userId: number | string) {
-    const res = await api.delete<any>(`/users/${userId}`);
+    const res = await api.delete(`/users/${userId}`);
     return res.data;
   }
 
   async function onConfirmDeleteUser() {
     if (!deleting) return;
-
-
 
     try {
       setDeleteSaving(true);
@@ -524,14 +598,14 @@ export default function AdminUsersPage() {
 
       await deleteUser(deleting.id);
 
-      showToast("User deleted successfully.");
+      showToastSuccess("User berhasil dihapus.");
 
       closeDeleteModal();
       await fetchUsers();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      showToast(msg);
+      const { mainMessage } = parseApiError(e);
+      setError(mainMessage);
+      showToastError(mainMessage);
     } finally {
       setDeleteSaving(false);
     }
@@ -542,17 +616,31 @@ export default function AdminUsersPage() {
       {/* TOAST (kanan atas) */}
       {toastOpen && (
         <div className="fixed top-6 right-6 z-[9999]">
-          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 shadow-md min-w-[320px] max-w-[520px]">
-            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-            <p className="text-sm font-medium text-green-800">{toastMsg}</p>
+          <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 shadow-md min-w-[320px] max-w-[520px] ${
+            toastType === "success"
+              ? "border-green-200 bg-green-50"
+              : "border-red-200 bg-red-50"
+          }`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${
+              toastType === "success" ? "bg-green-500" : "bg-red-500"
+            }`} />
+            <p className={`text-sm font-medium ${
+              toastType === "success"
+                ? "text-green-800"
+                : "text-red-800"
+            }`}>{toastMsg}</p>
 
             <button
               onClick={() => setToastOpen(false)}
-              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-green-100"
+              className={`ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg ${
+                toastType === "success"
+                  ? "hover:bg-green-100"
+                  : "hover:bg-red-100"
+              }`}
               aria-label="Close"
               title="Close"
             >
-              <X size={16} className="text-green-800" />
+              <X size={16} className={toastType === "success" ? "text-green-800" : "text-red-800"} />
             </button>
           </div>
         </div>
@@ -584,55 +672,57 @@ export default function AdminUsersPage() {
             <h2 className="text-base font-semibold text-gray-900">List User</h2>
 
             <div className="flex items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-                aria-label="Rows per page"
-              >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-
-              <div className="relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9"
-                  onClick={() => setOpenFilter((v) => !v)}
+              <div className="flex items-center gap-2">
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
+                  aria-label="Rows per page"
                 >
-                  <IoFilter />Filter
-                </Button>
+                  {[10, 20, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
 
-                {openFilter && (
-                  <div className="absolute right-0 mt-2 w-[200px] rounded-xl border border-gray-200 bg-white p-2 shadow-lg z-20">
-                    {[
-                      { label: "All Status", value: "all" },
-                      { label: "Approve", value: "approve" },
-                      { label: "Pending", value: "pending" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter(opt.value as "all" | "approve" | "pending");
-                          setOpenFilter(false);
-                        }}
-                        className={[
-                          "w-full rounded-lg px-3 py-2 text-left text-sm",
-                          statusFilter === opt.value
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700 hover:bg-gray-50",
-                        ].join(" ")}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9"
+                    onClick={() => setOpenFilter((v) => !v)}
+                  >
+                    <IoFilter />Filter
+                  </Button>
+
+                  {openFilter && (
+                    <div className="absolute right-0 mt-2 w-[200px] rounded-xl border border-gray-200 bg-white p-2 shadow-lg z-20">
+                      {[
+                        { label: "All Status", value: "all" },
+                        { label: "Approve", value: "approve" },
+                        { label: "Pending", value: "pending" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter(opt.value as "all" | "approve" | "pending");
+                            setOpenFilter(false);
+                          }}
+                          className={[
+                            "w-full rounded-lg px-3 py-2 text-left text-sm",
+                            statusFilter === opt.value
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-700 hover:bg-gray-50",
+                          ].join(" ")}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <Button
@@ -650,13 +740,56 @@ export default function AdminUsersPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="text-left text-sm text-gray-600">
-                    <th className="py-3 px-3 font-medium">Id</th>
-                    <th className="py-3 px-3 font-medium">Nama</th>
-                    <th className="py-3 px-3 font-medium">Username</th>
-                    <th className="py-3 px-3 font-medium min-w-[260px]">
-                      Email
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("id")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Id
+                        {renderSortIcon("id")}
+                      </button>
                     </th>
-                    <th className="py-3 px-3 font-medium">Status</th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("name")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Nama
+                        {renderSortIcon("name")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("username")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Username
+                        {renderSortIcon("username")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium min-w-[260px]">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("email")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Email
+                        {renderSortIcon("email")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("status")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Status
+                        {renderSortIcon("status")}
+                      </button>
+                    </th>
                     <th className="py-3 px-3 font-medium text-center">
                       Actions
                     </th>
@@ -783,7 +916,6 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -823,9 +955,12 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setAddForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "name") ? "border-red-500" : ""}`}
                   placeholder="e.g. Cipta Azzahra"
                 />
+                {getFieldError(addFieldErrors, "name") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "name")}</p>
+                )}
               </div>
 
               <div>
@@ -837,9 +972,12 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setAddForm((s) => ({ ...s, username: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "username") ? "border-red-500" : ""}`}
                   placeholder="e.g. ciptaazzahra"
                 />
+                {getFieldError(addFieldErrors, "username") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "username")}</p>
+                )}
               </div>
 
               <div>
@@ -851,10 +989,13 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setAddForm((s) => ({ ...s, email: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "email") ? "border-red-500" : ""}`}
                   placeholder="e.g. ciptaazzahra@gmail.com"
                   type="email"
                 />
+                {getFieldError(addFieldErrors, "email") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "email")}</p>
+                )}
               </div>
 
               <div>
@@ -868,7 +1009,7 @@ export default function AdminUsersPage() {
                     onChange={(e) =>
                       setAddForm((s) => ({ ...s, password: e.target.value }))
                     }
-                    className="h-10 pr-10"
+                    className={`h-10 pr-10 ${getFieldError(addFieldErrors, "password") ? "border-red-500" : ""}`}
                     type={showAddPassword ? "text" : "password"}
                   />
 
@@ -887,6 +1028,9 @@ export default function AdminUsersPage() {
                     )}
                   </button>
                 </div>
+                {getFieldError(addFieldErrors, "password") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "password")}</p>
+                )}
               </div>
 
               <div className="pt-3 flex items-center justify-center gap-4">
@@ -945,8 +1089,11 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "name") ? "border-red-500" : ""}`}
                 />
+                {getFieldError(editFieldErrors, "name") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "name")}</p>
+                )}
               </div>
 
               <div>
@@ -958,8 +1105,11 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, username: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "username") ? "border-red-500" : ""}`}
                 />
+                {getFieldError(editFieldErrors, "username") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "username")}</p>
+                )}
               </div>
 
               <div>
@@ -969,9 +1119,12 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, email: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "email") ? "border-red-500" : ""}`}
                   type="email"
                 />
+                {getFieldError(editFieldErrors, "email") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "email")}</p>
+                )}
               </div>
 
               <div>
@@ -984,7 +1137,7 @@ export default function AdminUsersPage() {
                       setPasswordChanged(true);
                       setEditForm((s) => ({ ...s, password: e.target.value }));
                     }}
-                    className="h-10 pr-10"
+                    className={`h-10 pr-10 ${getFieldError(editFieldErrors, "password") ? "border-red-500" : ""}`}
                     type={showEditPassword ? "text" : "password"}
                   />
 
@@ -1003,6 +1156,10 @@ export default function AdminUsersPage() {
                     )}
                   </button>
                 </div>
+
+                {getFieldError(editFieldErrors, "password") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "password")}</p>
+                )}
 
                 <p className="mt-2 text-xs text-gray-500">
                   (Opsional) Ubah password hanya jika kamu mengetik password baru.

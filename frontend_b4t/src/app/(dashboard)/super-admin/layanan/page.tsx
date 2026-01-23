@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
@@ -24,8 +24,8 @@ import { IoFilter } from "react-icons/io5";
 type BackendLayanan = {
   id: number | string;
   nama_layanan?: string | null;
-  tanggal_layanan?: string | null; // ✅ date (YYYY-MM-DD)
-  pembayaran?: number | string | null; // ✅ integer
+  tanggal_layanan?: string | null; // âœ… date (YYYY-MM-DD)
+  pembayaran?: number | string | null; // âœ… integer
 };
 
 
@@ -77,6 +77,12 @@ export default function SuperAdminTestingPage() {
     );
   }
 
+  function normalizeDate(dateStr: any): string {
+    if (!dateStr) return "";
+    // Ambil hanya YYYY-MM-DD tanpa timezone info
+    return String(dateStr).substring(0, 10);
+  }
+
 
   const ENDPOINT_LIST = "/layanan";
   const ENDPOINT_CREATE = "/layanan";
@@ -99,7 +105,7 @@ export default function SuperAdminTestingPage() {
       const mapped: UiLayanan[] = raw.map((r) => ({
         id: r.id,
         nama_layanan: String(r.nama_layanan ?? "-"),
-        tanggal_layanan: String(r.tanggal_layanan ?? ""),
+        tanggal_layanan: normalizeDate(r.tanggal_layanan),
         pembayaran: Number(r.pembayaran ?? 0),
       }));
 
@@ -262,13 +268,8 @@ export default function SuperAdminTestingPage() {
 
   function formatDate(date: string) {
     if (!date) return "-";
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return date;
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    // Return format YYYY-MM-DD seperti di database
+    return String(date).substring(0, 10);
   }
 
   const [openAdd, setOpenAdd] = useState(false);
@@ -362,7 +363,9 @@ export default function SuperAdminTestingPage() {
     if (!openEdit || !editing) return;
     setEditForm({
       nama_layanan: String(editing.nama_layanan ?? ""),
-      tanggal_layanan: String(editing.tanggal_layanan ?? ""),
+      tanggal_layanan: editing.tanggal_layanan 
+        ? String(editing.tanggal_layanan).substring(0, 10)  // Ambil 10 karakter pertama YYYY-MM-DD
+        : "",
       pembayaran: String(editing.pembayaran ?? 0),
     });
   }, [openEdit, editing]);
@@ -445,7 +448,7 @@ export default function SuperAdminTestingPage() {
   };
   const handleImportLayanan = async () => {
   if (!fileLayanan) {
-    alert("Pilih file terlebih dahulu");
+    showToast("Pilih file terlebih dahulu");
     return;
   }
 
@@ -462,9 +465,9 @@ export default function SuperAdminTestingPage() {
     );
 
     // notif sukses
-    alert(res.data.message || "Import layanan berhasil 🎉");
+    showToast(res.data.message || "Import layanan berhasil");
 
-    // 🔄 refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
+    // ðŸ”„ refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
     const refresh = await api.get("/layanan");
 
     const raw: BackendLayanan[] = Array.isArray(refresh.data?.data)
@@ -487,12 +490,11 @@ export default function SuperAdminTestingPage() {
 
   } catch (err: any) {
     console.error(err);
-    alert(err.response?.data?.message || "Import gagal, cek format file");
+    showToast(err.response?.data?.message || "Import gagal, cek format file");
   } finally {
     setLoadingImportLayanan(false);
   }
 };
-
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
@@ -599,12 +601,18 @@ export default function SuperAdminTestingPage() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mx-0.5">
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
+<<<<<<< HEAD
                 className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-gray-700 mr-2 outline-none"
                 aria-label="Rows per page">
+=======
+                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none mr-2"
+                aria-label="Rows per page"
+              >
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
                 {[10, 20, 50].map((size) => (
                   <option key={size} value={size}>
                     {size}
@@ -1067,7 +1075,7 @@ export default function SuperAdminTestingPage() {
                   {deleting.nama_layanan}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {formatDate(deleting.tanggal_layanan)} •{" "}
+                  {formatDate(deleting.tanggal_layanan)} â€¢{" "}
                   {formatIdr(deleting.pembayaran)}
                 </div>
               </div>
@@ -1183,3 +1191,4 @@ export default function SuperAdminTestingPage() {
     </div>
   );
 }
+

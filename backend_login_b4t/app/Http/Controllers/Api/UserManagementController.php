@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\LogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class UserManagementController extends Controller
 {
@@ -105,8 +107,26 @@ class UserManagementController extends Controller
             'name' => 'required|string',
             'username' => 'required|string|unique:users',
             'email' => 'nullable|email|unique:users',
-            'password' => 'required|min:6',
+            'password' => 'required|min:8',
+        ], [
+            'email.email'   => 'Format email tidak valid',
+            'password.min'  => 'Password minimal 8 karakter',
         ]);
+
+        // Early duplicate check untuk respon 409 yang lebih jelas
+        if (User::where('username', $request->username)->exists()) {
+            return response()->json([
+                'message' => 'Username sudah dipakai',
+                'field' => 'username'
+            ], 409);
+        }
+
+        if ($request->email && User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Email sudah dipakai',
+                'field' => 'email'
+            ], 409);
+        }
 
         $newUser = User::create([
             'name' => $request->name,
@@ -153,11 +173,39 @@ class UserManagementController extends Controller
             }
         }
 
+        // Early duplicate check SEBELUM validasi (untuk user lain, exclude diri sendiri)
+        $errors = [];
+
+        if ($request->has('username') && User::where('username', $request->username)->where('id', '!=', $id)->exists()) {
+            $errors['username'] = 'Username sudah dipakai';
+        }
+
+        if ($request->has('email') && User::where('email', $request->email)->where('id', '!=', $id)->exists()) {
+            $errors['email'] = 'Email sudah dipakai';
+        }
+
+        // Cek format email
+        if ($request->has('email') && !filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Format email tidak valid';
+        }
+
+        // Cek password minimal 8 karakter
+        if ($request->has('password') && strlen($request->password) < 8) {
+            $errors['password'] = 'Password minimal 8 karakter';
+        }
+
+        // Return semua error sekaligus jika ada
+        if (!empty($errors)) {
+            return response()->json([
+                'message' => 'Data tidak valid',
+                'errors' => $errors
+            ], 409);
+        }
+
+        // Jika semua validation pass, lanjut cek field lain (name, username format)
         $request->validate([
             'name' => 'sometimes|string',
-            'username' => 'sometimes|string|unique:users,username,' . $id,
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'password' => 'sometimes|min:6',
+            'username' => 'sometimes|string',
         ]);
 
         $oldData = $user->toArray();
@@ -223,7 +271,7 @@ class UserManagementController extends Controller
     public function getMe(Request $request)
     {
         $user = $request->user();
-        \Illuminate\Support\Facades\Log::info('getMe controller hit. User: ' . ($user ? $user->username : 'NULL'));
+        Log::info('getMe controller hit. User: ' . ($user ? $user->username : 'NULL'));
 
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
