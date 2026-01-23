@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\LogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class UserManagementController extends Controller
 {
@@ -105,8 +106,23 @@ class UserManagementController extends Controller
             'name' => 'required|string',
             'username' => 'required|string|unique:users',
             'email' => 'nullable|email|unique:users',
-            'password' => 'required|min:6',
+            'password' => 'required|min:8',
         ]);
+
+        // Early duplicate check untuk respon 409 yang lebih jelas
+        if (User::where('username', $request->username)->exists()) {
+            return response()->json([
+                'message' => 'Username sudah dipakai',
+                'field' => 'username'
+            ], 409);
+        }
+
+        if ($request->email && User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Email sudah dipakai',
+                'field' => 'email'
+            ], 409);
+        }
 
         $newUser = User::create([
             'name' => $request->name,
@@ -157,7 +173,7 @@ class UserManagementController extends Controller
             'name' => 'sometimes|string',
             'username' => 'sometimes|string|unique:users,username,' . $id,
             'email' => 'sometimes|email|unique:users,email,' . $id,
-            'password' => 'sometimes|min:6',
+            'password' => 'sometimes|min:8',
         ]);
 
         $oldData = $user->toArray();
@@ -166,9 +182,22 @@ class UserManagementController extends Controller
             $user->name = $request->name;
         }
         if ($request->has('username')) {
+            // Pastikan username unik (selain dirinya sendiri)
+            if (User::where('username', $request->username)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'message' => 'Username sudah dipakai',
+                    'field' => 'username'
+                ], 409);
+            }
             $user->username = $request->username;
         }
         if ($request->has('email')) {
+            if (User::where('email', $request->email)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'message' => 'Email sudah dipakai',
+                    'field' => 'email'
+                ], 409);
+            }
             $user->email = $request->email;
         }
         if ($request->has('password')) {
@@ -223,7 +252,7 @@ class UserManagementController extends Controller
     public function getMe(Request $request)
     {
         $user = $request->user();
-        \Illuminate\Support\Facades\Log::info('getMe controller hit. User: ' . ($user ? $user->username : 'NULL'));
+        Log::info('getMe controller hit. User: ' . ($user ? $user->username : 'NULL'));
 
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);

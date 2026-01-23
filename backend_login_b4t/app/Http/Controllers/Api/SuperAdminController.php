@@ -16,7 +16,10 @@ class SuperAdminController extends Controller
             'name'     => 'required|string|max:255',
             'username' => 'required|string|unique:users,username',
             'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
+            'password' => 'required|min:8',
+        ], [
+            'email.email'   => 'Format email tidak valid',
+            'password.min'  => 'Password minimal 8 karakter',
         ]);
 
         // Guard clause untuk duplicate sebelum query insert (lebih jelas untuk client)
