@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { IoFilter } from "react-icons/io5";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectGroup,
+} from "@/components/ui/select";
 
 type BackendUser = {
   id: number | string;
@@ -588,18 +596,22 @@ export default function SuperAdminUsersPage() {
 
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-                <select
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-                  aria-label="Rows per page"
-                >
-                  {[10, 20, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                value={String(pageSize)}
+                onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="w-20 h-9" id="select-rows-per-page">
+                  <SelectValue placeholder="Rows" />
+                </SelectTrigger>
+
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
                 <div className="relative">
                   <Button

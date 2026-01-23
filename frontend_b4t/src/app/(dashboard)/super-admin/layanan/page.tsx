@@ -20,6 +20,14 @@ import { FaFileCsv, FaFilePdf } from "react-icons/fa";
 import { IoPrintSharp } from "react-icons/io5";
 import axios from "axios";
 import { IoFilter } from "react-icons/io5";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectGroup,
+} from "@/components/ui/select";
 
 type BackendLayanan = {
   id: number | string;
@@ -27,7 +35,6 @@ type BackendLayanan = {
   tanggal_layanan?: string | null; // ✅ date (YYYY-MM-DD)
   pembayaran?: number | string | null; // ✅ integer
 };
-
 
 type UiLayanan = {
   id: number | string;
@@ -37,8 +44,6 @@ type UiLayanan = {
 };
 
 export default function SuperAdminTestingPage() {
-
-
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -76,7 +81,6 @@ export default function SuperAdminTestingPage() {
       "Terjadi kesalahan"
     );
   }
-
 
   const ENDPOINT_LIST = "/layanan";
   const ENDPOINT_CREATE = "/layanan";
@@ -226,7 +230,7 @@ export default function SuperAdminTestingPage() {
   const pageTo = Math.min(page * pageSize, totalItems);
 
   const toggleSort = (
-    key: "nama_layanan" | "tanggal_layanan" | "pembayaran"
+    key: "nama_layanan" | "tanggal_layanan" | "pembayaran",
   ) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -238,7 +242,7 @@ export default function SuperAdminTestingPage() {
   };
 
   const renderSortIcon = (
-    key: "nama_layanan" | "tanggal_layanan" | "pembayaran"
+    key: "nama_layanan" | "tanggal_layanan" | "pembayaran",
   ) => {
     if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5" />;
     return sortDir === "asc" ? (
@@ -336,19 +340,19 @@ export default function SuperAdminTestingPage() {
   }
 
   const handleDownload = (type: "excel" | "pdf" | "csv" | "print") => {
-  let url = "";
+    let url = "";
 
-  if (type === "excel") {
-    url = "http://localhost:8000/api/export/layanan/excel";
-  } else if (type === "pdf") {
-    url = "http://localhost:8000/api/export/layanan/pdf";
-  } else if (type === "csv") {
-    url = "http://localhost:8000/api/export/layanan/csv";
-  } else if (type === "print") {
-    url = "http://localhost:8000/api/print/layanan";
-  }
-  window.open(url, "_blank");
-};
+    if (type === "excel") {
+      url = "http://localhost:8000/api/export/layanan/excel";
+    } else if (type === "pdf") {
+      url = "http://localhost:8000/api/export/layanan/pdf";
+    } else if (type === "csv") {
+      url = "http://localhost:8000/api/export/layanan/csv";
+    } else if (type === "print") {
+      url = "http://localhost:8000/api/print/layanan";
+    }
+    window.open(url, "_blank");
+  };
 
   function closeEditModal() {
     if (editSaving) return;
@@ -444,55 +448,53 @@ export default function SuperAdminTestingPage() {
     setFileLayanan(null);
   };
   const handleImportLayanan = async () => {
-  if (!fileLayanan) {
-    alert("Pilih file terlebih dahulu");
-    return;
-  }
+    if (!fileLayanan) {
+      alert("Pilih file terlebih dahulu");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("file", fileLayanan);
+    const formData = new FormData();
+    formData.append("file", fileLayanan);
 
-  try {
-    setLoadingImportLayanan(true);
+    try {
+      setLoadingImportLayanan(true);
 
-    const res = await axios.post(
-      "http://localhost:8000/api/import/layanan",
-      formData,
-      { withCredentials: true }
-    );
+      const res = await axios.post(
+        "http://localhost:8000/api/import/layanan",
+        formData,
+        { withCredentials: true },
+      );
 
-    // notif sukses
-    alert(res.data.message || "Import layanan berhasil 🎉");
+      // notif sukses
+      alert(res.data.message || "Import layanan berhasil 🎉");
 
-    // 🔄 refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
-    const refresh = await api.get("/layanan");
+      // 🔄 refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
+      const refresh = await api.get("/layanan");
 
-    const raw: BackendLayanan[] = Array.isArray(refresh.data?.data)
-      ? refresh.data.data
-      : Array.isArray(refresh.data)
-        ? refresh.data
-        : [];
+      const raw: BackendLayanan[] = Array.isArray(refresh.data?.data)
+        ? refresh.data.data
+        : Array.isArray(refresh.data)
+          ? refresh.data
+          : [];
 
-    const mapped: UiLayanan[] = raw.map((r) => ({
-      id: r.id,
-      nama_layanan: String(r.nama_layanan ?? "-"),
-      tanggal_layanan: String(r.tanggal_layanan ?? ""),
-      pembayaran: Number(r.pembayaran ?? 0),
-    }));
+      const mapped: UiLayanan[] = raw.map((r) => ({
+        id: r.id,
+        nama_layanan: String(r.nama_layanan ?? "-"),
+        tanggal_layanan: String(r.tanggal_layanan ?? ""),
+        pembayaran: Number(r.pembayaran ?? 0),
+      }));
 
-    setRows(mapped); 
+      setRows(mapped);
 
-    // reset file input
-    setFileLayanan(null);
-
-  } catch (err: any) {
-    console.error(err);
-    alert(err.response?.data?.message || "Import gagal, cek format file");
-  } finally {
-    setLoadingImportLayanan(false);
-  }
-};
-
+      // reset file input
+      setFileLayanan(null);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || "Import gagal, cek format file");
+    } finally {
+      setLoadingImportLayanan(false);
+    }
+  };
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
@@ -600,18 +602,23 @@ export default function SuperAdminTestingPage() {
             </div>
 
             <div className="flex items-center gap-2 mx-0.5">
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none mr-2"
-                aria-label="Rows per page"
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => setPageSize(Number(value))}
               >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-20 h-9" id="select-rows-per-page">
+                  <SelectValue placeholder="Rows" />
+                </SelectTrigger>
+
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
               <div className="relative">
                 <Button
@@ -620,7 +627,8 @@ export default function SuperAdminTestingPage() {
                   className="h-9"
                   onClick={() => setOpenFilter((v) => !v)}
                 >
-                <IoFilter />Filter
+                  <IoFilter />
+                  Filter
                 </Button>
 
                 {openFilter && (
@@ -750,7 +758,10 @@ export default function SuperAdminTestingPage() {
                     </tr>
                   ) : (
                     paginated.map((r, idx) => (
-                      <tr key={String(r.id)} className="border-t border-gray-100">
+                      <tr
+                        key={String(r.id)}
+                        className="border-t border-gray-100"
+                      >
                         <td className="py-3 px-3">{pageFrom + idx}</td>
                         <td className="py-3 px-3 truncate">{r.nama_layanan}</td>
                         <td className="py-3 px-3 whitespace-nowrap">
@@ -819,7 +830,7 @@ export default function SuperAdminTestingPage() {
                     >
                       {item}
                     </button>
-                  )
+                  ),
                 )}
                 <button
                   type="button"
@@ -845,9 +856,12 @@ export default function SuperAdminTestingPage() {
           <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
             <div className="flex items-start justify-between px-8 pt-7">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Add data</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Add data
+                </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Fill in the details below to create a new testing service data.
+                  Fill in the details below to create a new testing service
+                  data.
                 </p>
               </div>
 
@@ -941,7 +955,9 @@ export default function SuperAdminTestingPage() {
           <div className="w-full max-w-[720px] rounded-2xl bg-white shadow-xl">
             <div className="flex items-start justify-between px-8 pt-7">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Edit data</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Edit data
+                </h2>
                 <p className="mt-1 text-sm text-gray-500">
                   Update the testing service data details below
                 </p>
