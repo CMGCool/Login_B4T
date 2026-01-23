@@ -77,6 +77,12 @@ export default function SuperAdminTestingPage() {
     );
   }
 
+  function normalizeDate(dateStr: any): string {
+    if (!dateStr) return "";
+    // Ambil hanya YYYY-MM-DD tanpa timezone info
+    return String(dateStr).substring(0, 10);
+  }
+
 
   const ENDPOINT_LIST = "/layanan";
   const ENDPOINT_CREATE = "/layanan";
@@ -99,7 +105,7 @@ export default function SuperAdminTestingPage() {
       const mapped: UiLayanan[] = raw.map((r) => ({
         id: r.id,
         nama_layanan: String(r.nama_layanan ?? "-"),
-        tanggal_layanan: String(r.tanggal_layanan ?? ""),
+        tanggal_layanan: normalizeDate(r.tanggal_layanan),
         pembayaran: Number(r.pembayaran ?? 0),
       }));
 
@@ -262,13 +268,8 @@ export default function SuperAdminTestingPage() {
 
   function formatDate(date: string) {
     if (!date) return "-";
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return date;
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    // Return format YYYY-MM-DD seperti di database
+    return String(date).substring(0, 10);
   }
 
   const [openAdd, setOpenAdd] = useState(false);
@@ -362,7 +363,7 @@ export default function SuperAdminTestingPage() {
     if (!openEdit || !editing) return;
     setEditForm({
       nama_layanan: String(editing.nama_layanan ?? ""),
-      tanggal_layanan: String(editing.tanggal_layanan ?? ""),
+      tanggal_layanan: normalizeDate(editing.tanggal_layanan),
       pembayaran: String(editing.pembayaran ?? 0),
     });
   }, [openEdit, editing]);
