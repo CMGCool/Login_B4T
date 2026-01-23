@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { sendForgotPasswordOtp, verifyForgotPasswordOtp } from "@/lib/auth";
 
@@ -12,7 +12,7 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const getOtpStorageKey = (email: string) =>
   `forgot_password_otp_expires_at:${email || "unknown"}`;
 
-export default function VerifyOtpPage() {
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = useMemo(() => searchParams.get("email") ?? "", [searchParams]);
@@ -309,5 +309,13 @@ export default function VerifyOtpPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyOtpContent />
+    </Suspense>
   );
 }

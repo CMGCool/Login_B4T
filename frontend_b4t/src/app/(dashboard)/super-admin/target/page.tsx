@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { Pencil, Search, Upload, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { AiFillFileExcel } from "react-icons/ai";
 import { FaFilePdf, FaFileCsv } from "react-icons/fa";
 import { IoPrintSharp } from "react-icons/io5";
-import { IoFilter } from "react-icons/io5";
 
 type BackendTarget = {
   id: number | string;
@@ -31,8 +30,6 @@ function formatRupiah(v: number) {
 export default function TargetPage() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [q, setQ] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
 
 
   const [items, setItems] = useState<RevenueTarget[]>([]);
@@ -65,13 +62,17 @@ export default function TargetPage() {
     };
   }, []);
 
-  function getApiErrorMessage(e: any) {
-    return (
-      e?.response?.data?.message ||
-      e?.response?.data?.error ||
-      e?.message ||
-      "Terjadi kesalahan"
-    );
+  function getApiErrorMessage(e: unknown) {
+    if (e && typeof e === 'object' && 'response' in e) {
+      const err = e as { response?: { data?: { message?: string; error?: string } }; message?: string };
+      return (
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Terjadi kesalahan"
+      );
+    }
+    return "Terjadi kesalahan";
   }
 
   const [file, setFile] = useState<File | null>(null);
@@ -104,60 +105,12 @@ export default function TargetPage() {
   const ENDPOINT_LIST = "/target";
   const ENDPOINT_UPDATE = (id: number | string) => `/target/${id}`;
 
-  const monthToNumber = (value: string) => {
-    const v = value.trim().toLowerCase();
-    if (!v) return null;
-
-    const numeric = Number(v);
-    if (Number.isFinite(numeric) && numeric >= 1 && numeric <= 12) {
-      return numeric;
-    }
-
-    const map: Record<string, number> = {
-      jan: 1,
-      january: 1,
-      januari: 1,
-      feb: 2,
-      february: 2,
-      februari: 2,
-      mar: 3,
-      march: 3,
-      maret: 3,
-      apr: 4,
-      april: 4,
-      may: 5,
-      mei: 5,
-      jun: 6,
-      june: 6,
-      juni: 6,
-      jul: 7,
-      july: 7,
-      juli: 7,
-      aug: 8,
-      august: 8,
-      agustus: 8,
-      sep: 9,
-      sept: 9,
-      september: 9,
-      oct: 10,
-      october: 10,
-      oktober: 10,
-      nov: 11,
-      november: 11,
-      dec: 12,
-      december: 12,
-      desember: 12,
-    };
-
-    return map[v] ?? null;
-  };
-
-  const fetchTargets = async () => {
+  const fetchTargets = useCallback(async () => {
     try {
       setLoading(true);
       setErr(null);
 
-      const res = await api.get<any>(ENDPOINT_LIST);
+      const res = await api.get<{ data?: BackendTarget[] }>(ENDPOINT_LIST);
 
       const raw: BackendTarget[] = Array.isArray(res.data?.data)
         ? res.data.data
@@ -176,23 +129,19 @@ export default function TargetPage() {
 
       const years = Array.from(new Set(mapped.map((m) => m.year).filter(Boolean))).sort();
       if (years.length > 0 && !years.includes(year)) {
-<<<<<<< HEAD
         const currentYear = String(new Date().getFullYear());
         if (years.includes(currentYear)) {
           setYear(currentYear);
         } else {
           setYear(years[years.length - 1]); // ambil yang terbesar
         }
-=======
-        setYear(years[years.length - 1]);
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setErr(getApiErrorMessage(e) || "Gagal memuat data target.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [year]);
 
   useEffect(() => {
     let alive = true;
@@ -206,94 +155,28 @@ export default function TargetPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [fetchTargets]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const dateFrom = startDate ? Date.parse(startDate) : null;
-    const dateTo = endDate ? Date.parse(endDate) : null;
 
     const byYear = items.filter((it) => String(it.year) === String(year));
     const searched = !s ? byYear : byYear.filter((it) => it.month.toLowerCase().includes(s));
 
-    if (!dateFrom && !dateTo) return searched;
+    return searched;
+  }, [items, q, year]);
 
-    return searched.filter((it) => {
-      const monthNumber = monthToNumber(it.month);
-      const yearNumber = Number(it.year);
-      if (!monthNumber || !Number.isFinite(yearNumber)) return false;
-
-      const rowDate = Date.UTC(yearNumber, monthNumber - 1, 1);
-      if (dateFrom != null && rowDate < dateFrom) return false;
-      if (dateTo != null && rowDate > dateTo) return false;
-
-      return true;
-    });
-  }, [items, q, year, startDate, endDate]);
-
-<<<<<<< HEAD
-=======
-  const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
-
-  const totalItems = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-
-  useEffect(() => {
-    setPage(1);
-  }, [q, year, pageSize, startDate, endDate]);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const pageItems = useMemo(() => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-
-    const pages = new Set<number>();
-    pages.add(1);
-    pages.add(totalPages);
-    pages.add(page);
-    pages.add(page - 1);
-    pages.add(page + 1);
-
-    const sorted = Array.from(pages)
-      .filter((p) => p >= 1 && p <= totalPages)
-      .sort((a, b) => a - b);
-
-    const result: Array<number | "dots"> = [];
-    sorted.forEach((p, idx) => {
-      if (idx > 0 && p - sorted[idx - 1] > 1) result.push("dots");
-      result.push(p);
-    });
-
-    return result;
-  }, [page, totalPages]);
-
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
-
-  const pageFrom = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageTo = Math.min(page * pageSize, totalItems);
-
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
   const total = useMemo(() => {
     return filtered.reduce((acc, it) => acc + (Number(it.target) || 0), 0);
   }, [filtered]);
 
   const yearOptions = useMemo(() => {
     const ys = Array.from(new Set(items.map((i) => i.year).filter(Boolean))).sort();
-<<<<<<< HEAD
     if (ys.length) return ys;
     
     // Fallback: tahun saat ini sampai 3 tahun ke depan
     const currentYear = new Date().getFullYear();
     return [currentYear, currentYear + 1, currentYear + 2].map(String);
-=======
-    return ys.length ? ys : ["2025", "2026", "2027"];
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
   }, [items]);
 
   const onOpenEdit = (row: RevenueTarget) => {
@@ -316,7 +199,7 @@ export default function TargetPage() {
 
       const nextVal = Number(editTarget || 0);
 
-      const res = await api.put<any>(ENDPOINT_UPDATE(editing.id), {
+      const res = await api.put<{ success?: boolean; message?: string }>(ENDPOINT_UPDATE(editing.id), {
         target_perbulan: nextVal,
       });
 
@@ -328,7 +211,7 @@ export default function TargetPage() {
 
       const msg = res.data?.message || "Target berhasil diperbarui.";
       showToast(msg);
-    } catch (e: any) {
+    } catch (e: unknown) {
       const msg = getApiErrorMessage(e) || "Gagal update target.";
       setErr(msg);
       showToast(msg);
@@ -361,13 +244,9 @@ export default function TargetPage() {
       showToast(res.data?.message || "Import berhasil.");
       setFile(null);
       await fetchTargets();
-    } catch (e: any) {
-      console.error("IMPORT ERROR:", e?.response?.data || e);
-      showToast(
-        e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          "Import gagal, cek format file / backend log"
-      );
+    } catch (e: unknown) {
+      console.error("IMPORT ERROR:", e);
+      showToast(getApiErrorMessage(e) || "Import gagal, cek format file / backend log");
     } finally {
       setLoadingImport(false);
     }
@@ -470,74 +349,6 @@ export default function TargetPage() {
                 Print
               </Button>
             </div>
-<<<<<<< HEAD
-=======
-
-            <div className="flex items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-                aria-label="Rows per page"
-              >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-
-              <div className="relative">
-                <Button type="button" variant="outline" className="h-9" onClick={() => setOpenFilter((v) => !v)}>
-                  <IoFilter />
-                  Filter
-                </Button>
-
-                {openFilter && (
-                  <div className="absolute right-0 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-20">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="h-9 w-full rounded-md border border-gray-200 px-2 text-sm text-gray-700 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">End Date</label>
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="h-9 w-full rounded-md border border-gray-200 px-2 text-sm text-gray-700 outline-none"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStartDate("");
-                            setEndDate("");
-                          }}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          Clear
-                        </button>
-
-                        <Button type="button" className="h-9 bg-blue-600 hover:bg-blue-700" onClick={() => setOpenFilter(false)}>
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
           </div>
 
           <div className="px-4 pb-4">
@@ -576,18 +387,12 @@ export default function TargetPage() {
                   )}
 
                   {!loading &&
-<<<<<<< HEAD
                     filtered.map((row, index) => (
                       <tr
                         key={row.id}
                         className="border-b border-gray-100 last:border-none"
                       >
                         <td className="py-3 px-3 text-gray-900">{index + 1}</td>
-=======
-                    paginated.map((row, idx) => (
-                      <tr key={row.id} className="border-b border-gray-100 last:border-none">
-                        <td className="py-3 px-3 text-gray-700">{pageFrom + idx}</td>
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
                         <td className="py-3 px-3 text-gray-900">{row.month}</td>
                         <td className="py-3 px-3 text-gray-900">{formatRupiah(Number(row.target) || 0)}</td>
                         <td className="py-3 px-3 text-right">
@@ -613,56 +418,6 @@ export default function TargetPage() {
                 </tbody>
               </table>
             </div>
-<<<<<<< HEAD
-=======
-
-            <div className="mt-4 flex items-center justify-between px-3 text-sm text-gray-500">
-              <div>
-                Showing {pageFrom} to {pageTo} of {totalItems} entries
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="h-8 px-3 rounded-md text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-
-                {pageItems.map((item, idx) =>
-                  item === "dots" ? (
-                    <span key={`dots-${idx}`} className="px-2 text-gray-400">
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPage(item)}
-                      className={[
-                        "h-8 min-w-[32px] rounded-md border px-2 text-sm",
-                        item === page
-                          ? "border-gray-300 text-gray-900 shadow-sm"
-                          : "border-transparent text-gray-500 hover:text-gray-900",
-                      ].join(" ")}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="h-8 px-3 rounded-md text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
           </div>
         </div>
 
