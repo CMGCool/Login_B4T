@@ -30,11 +30,11 @@ function formatRupiah(v: number) {
 }
 
 export default function TargetPage() {
-  const [year, setYear] = useState("2025");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [q, setQ] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [openFilter, setOpenFilter] = useState(false);
+
 
   const [items, setItems] = useState<RevenueTarget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +178,12 @@ export default function TargetPage() {
 
       const years = Array.from(new Set(mapped.map((m) => m.year).filter(Boolean))).sort();
       if (years.length > 0 && !years.includes(year)) {
-        setYear(years[years.length - 1]); // ambil yang terbesar
+        const currentYear = String(new Date().getFullYear());
+        if (years.includes(currentYear)) {
+          setYear(currentYear);
+        } else {
+          setYear(years[years.length - 1]); // ambil yang terbesar
+        }
       }
     } catch (e: any) {
       setErr(getApiErrorMessage(e) || "Gagal memuat data target.");
@@ -228,61 +233,17 @@ export default function TargetPage() {
     });
   }, [items, q, year, startDate, endDate]);
 
-  const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
-
-  const totalItems = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-
-  useEffect(() => {
-    setPage(1);
-  }, [q, year, pageSize, startDate, endDate]);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const pageItems = useMemo(() => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-
-    const pages = new Set<number>();
-    pages.add(1);
-    pages.add(totalPages);
-    pages.add(page);
-    pages.add(page - 1);
-    pages.add(page + 1);
-
-    const sorted = Array.from(pages)
-      .filter((p) => p >= 1 && p <= totalPages)
-      .sort((a, b) => a - b);
-
-    const result: Array<number | "dots"> = [];
-    sorted.forEach((p, idx) => {
-      if (idx > 0 && p - sorted[idx - 1] > 1) result.push("dots");
-      result.push(p);
-    });
-
-    return result;
-  }, [page, totalPages]);
-
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
-
-  const pageFrom = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageTo = Math.min(page * pageSize, totalItems);
-
   const total = useMemo(() => {
     return filtered.reduce((acc, it) => acc + (Number(it.target) || 0), 0);
   }, [filtered]);
 
   const yearOptions = useMemo(() => {
     const ys = Array.from(new Set(items.map((i) => i.year).filter(Boolean))).sort();
-    // fallback default pilihan
-    return ys.length ? ys : ["2025", "2026", "2027"];
+    if (ys.length) return ys;
+    
+    // Fallback: tahun saat ini sampai 3 tahun ke depan
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear + 1, currentYear + 2].map(String);
   }, [items]);
 
   const onOpenEdit = (row: RevenueTarget) => {
@@ -471,84 +432,6 @@ export default function TargetPage() {
                 Print
               </Button>
             </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-                aria-label="Rows per page"
-              >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-
-              <div className="relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9"
-                  onClick={() => setOpenFilter((v) => !v)}
-                >
-                  <IoFilter />
-                  Filter
-                </Button>
-
-                {openFilter && (
-                  <div className="absolute right-0 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-20">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          Start Date
-                        </label>
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="h-9 w-full rounded-md border border-gray-200 px-2 text-sm text-gray-700 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          End Date
-                        </label>
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="h-9 w-full rounded-md border border-gray-200 px-2 text-sm text-gray-700 outline-none"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStartDate("");
-                            setEndDate("");
-                          }}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          Clear
-                        </button>
-
-                        <Button
-                          type="button"
-                          className="h-9 bg-blue-600 hover:bg-blue-700"
-                          onClick={() => setOpenFilter(false)}
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="px-4 pb-4">
@@ -587,14 +470,12 @@ export default function TargetPage() {
                   )}
 
                   {!loading &&
-                    paginated.map((row, idx) => (
+                    filtered.map((row, index) => (
                       <tr
                         key={row.id}
                         className="border-b border-gray-100 last:border-none"
                       >
-                        <td className="py-3 px-3 text-gray-700">
-                          {pageFrom + idx}
-                        </td>
+                        <td className="py-3 px-3 text-gray-900">{index + 1}</td>
                         <td className="py-3 px-3 text-gray-900">{row.month}</td>
                         <td className="py-3 px-3 text-gray-900">
                           {formatRupiah(Number(row.target) || 0)}
@@ -625,50 +506,6 @@ export default function TargetPage() {
                   )}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-4 flex items-center justify-between px-3 text-sm text-gray-500">
-              <div>
-                Showing {pageFrom} to {pageTo} of {totalItems} entries
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="h-8 px-3 rounded-md text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                {pageItems.map((item, idx) =>
-                  item === "dots" ? (
-                    <span key={`dots-${idx}`} className="px-2 text-gray-400">
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPage(item)}
-                      className={[
-                        "h-8 min-w-[32px] rounded-md border px-2 text-sm",
-                        item === page
-                          ? "border-gray-300 text-gray-900 shadow-sm"
-                          : "border-transparent text-gray-500 hover:text-gray-900",
-                      ].join(" ")}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="h-8 px-3 rounded-md text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
             </div>
           </div>
         </div>

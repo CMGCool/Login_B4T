@@ -149,7 +149,6 @@ export default function SuperAdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_BASE_URL]);
 
   const filtered = useMemo(() => {
@@ -285,7 +284,7 @@ export default function SuperAdminUsersPage() {
   };
 
   /* =========================================================
-     ✅ ADD USER (via backend /api/register)
+     ADD USER (via backend /api/register)
      ========================================================= */
   const [openAdd, setOpenAdd] = useState(false);
   const [savingAdd, setSavingAdd] = useState(false);
@@ -587,11 +586,11 @@ export default function SuperAdminUsersPage() {
             <h2 className="text-base font-semibold text-gray-900">List User</h2>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center mr-2 gap-2">
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
+                  className="h-8 rounded-lg border border-gray-200 bg-white mr-2 px-3 text-sm text-gray-700 outline-none hover:border-gray-300 focus:border-blue-600"
                   aria-label="Rows per page"
                 >
                   {[10, 20, 50].map((size) => (
@@ -605,10 +604,10 @@ export default function SuperAdminUsersPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9"
+                    className="h-8"
                     onClick={() => setOpenFilter((v) => !v)}
                   >
-                    <IoFilter />Filter
+                    <IoFilter/>Filter
                   </Button>
 
                   {openFilter && (

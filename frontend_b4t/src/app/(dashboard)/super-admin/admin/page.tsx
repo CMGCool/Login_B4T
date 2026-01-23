@@ -486,7 +486,7 @@ export default function SuperAdminAdminPage() {
             <h2 className="text-base font-semibold text-gray-900">List Admin</h2>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center mr-2 gap-2">
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}

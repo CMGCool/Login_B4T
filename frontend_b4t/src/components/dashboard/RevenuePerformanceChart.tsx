@@ -10,7 +10,9 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { Select, SelectValue, SelectTrigger, SelectItem, SelectContent } from "../ui/select";
+import { getYearOptions } from "@/lib/date";
 
 type BackendChartResponse = {
   message?: string | null;
@@ -32,6 +34,13 @@ type Point = {
   month: string; // "Jan"..."Dec"
   targetBulanan: number;
   biayaBulanan: number;
+};
+
+type Props = {
+  month: string;
+  year: string;
+  onMonthChange: (v: string) => void;
+  onYearChange: (v: string) => void;
 };
 
 function monthShort(bulan: string) {
@@ -72,18 +81,22 @@ function monthShort(bulan: string) {
   if (key === "april") return "Apr";
   if (key === "september") return "Sep";
   if (key === "november") return "Nov";
-
-  // fallback: ambil 3 huruf pertama
   return s.slice(0, 3);
 }
 
+type Summary = {
+  total_biaya?: number | string | null;
+  total_target?: number | string | null;
+  selisih?: number | string | null;
+  persentase_tercapai?: number | string | null;
+};
+
 export function RevenuePerformanceChart() {
-
-
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [data, setData] = useState<Point[]>([]);
+  const [summary, setSummary] = useState<Summary>({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
@@ -108,8 +121,6 @@ export function RevenuePerformanceChart() {
         const years = responseYear ? [responseYear] : [];
         const fallbackYears = ["2025", "2026", "2027"];
         const mergedYears = Array.from(new Set([...fallbackYears, ...years])).sort();
-
-        // set opsi tahun & default year jika tahun sekarang tidak ada
         if (alive) {
           setAvailableYears(mergedYears);
           if (!mergedYears.includes(year)) {
@@ -126,6 +137,7 @@ export function RevenuePerformanceChart() {
 
         if (!alive) return;
         setData(mapped);
+        setSummary(payload.summary ?? {});
       } catch (e: any) {
         if (!alive) return;
         setErr(
@@ -147,6 +159,11 @@ export function RevenuePerformanceChart() {
 
   const rangeText = useMemo(() => `January - Dec ${year}`, [year]);
 
+  const isTrendingUp = useMemo(() => {
+    const percentage = Number(summary.persentase_tercapai ?? 0);
+    return percentage >= 100;
+  }, [summary.persentase_tercapai]);
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white">
       <div className="flex items-start justify-between gap-4 p-4">
@@ -156,20 +173,18 @@ export function RevenuePerformanceChart() {
           </h3>
           <p className="text-xs text-gray-500">{rangeText}</p>
         </div>
-
-        <select
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-        >
-          {(availableYears.length ? availableYears : ["2025", "2026", "2027"]).map(
-            (y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            )
-          )}
-        </select>
+       <Select value={year} onValueChange={setYear}>
+                     <SelectTrigger className="w-[100px] h-8">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {getYearOptions(2018, 1).map((y) => (
+                         <SelectItem key={y} value={y}>
+                           {y}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
       </div>
 
       <div className="px-4">
@@ -231,8 +246,12 @@ export function RevenuePerformanceChart() {
 
       <div className="p-4 pt-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-          Trending up this month
-          <TrendingUp size={16} className="text-gray-900" />
+          {isTrendingUp ? "Trending up this year" : "Trending down this year"}
+          {isTrendingUp ? (
+            <TrendingUp size={16} className="text-gray-900" />
+          ) : (
+            <TrendingDown size={16} className="text-gray-900" />
+          )}
         </div>
         <p className="mt-1 text-xs text-gray-500">
           Showing revenue performance for the year {year}

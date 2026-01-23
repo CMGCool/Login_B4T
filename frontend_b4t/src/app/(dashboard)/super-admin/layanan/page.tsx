@@ -603,9 +603,8 @@ export default function SuperAdminTestingPage() {
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
-                aria-label="Rows per page"
-              >
+                className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-gray-700 mr-2 outline-none"
+                aria-label="Rows per page">
                 {[10, 20, 50].map((size) => (
                   <option key={size} value={size}>
                     {size}
@@ -613,7 +612,7 @@ export default function SuperAdminTestingPage() {
                 ))}
               </select>
 
-              <div className="relative">
+              <div className="relative mr-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -624,8 +623,8 @@ export default function SuperAdminTestingPage() {
                 </Button>
 
                 {openFilter && (
-                  <div className="absolute right-0 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-20">
-                    <div className="space-y-3">
+                  <div className="absolute right-0 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3  shadow-lg z-20">
+                    <div className="space-y-3 ">
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">
                           Start Date

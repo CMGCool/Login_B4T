@@ -227,7 +227,6 @@ export default function SuperAdminDashboardPage() {
           </div>
         </div>
       </div>
-
       <div className="h-12" />
     </div>
   );
