@@ -91,6 +91,10 @@
         display: table;
         clear: both;
     }
+    .divider{
+      margin-top: 5px;
+      border-top: 3px solid #000000;   
+    }
     </style>
 </head>
 
@@ -109,6 +113,7 @@
                 </div>
             </div>
         </div>
+        <div class="divider"></div>
     </div>
 
     {{-- JUDUL --}}
