@@ -107,7 +107,7 @@ export function ServiceCostRecap({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {getYearOptions(2018, 10).map((y) => (
+                {getYearOptions(2018, 1).map((y) => (
                   <SelectItem key={y} value={y}>
                     {y}
                   </SelectItem>

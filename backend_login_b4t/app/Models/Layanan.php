@@ -18,7 +18,8 @@ class Layanan extends Model
     ];
 
     protected $casts = [
-        'tanggal_layanan' => 'date',
+        // Return YYYY-MM-DD to avoid timezone shifting on JSON serialization.
+        'tanggal_layanan' => 'date:Y-m-d',
         'pembayaran' => 'integer',
     ];
 }

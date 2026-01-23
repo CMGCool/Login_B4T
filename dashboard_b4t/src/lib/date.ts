@@ -13,10 +13,16 @@ export const MONTH_OPTIONS = [
   { value: "12", label: "December" },
 ];
 
-export function getYearOptions(startYear: number, count: number): string[] {
-  const years: string[] = [];
-  for (let i = 0; i < count; i++) {
-    years.push(String(startYear + i));
+export const getYearOptions = (
+  startYear = 2020,
+  futureYears = 2
+) => {
+  const currentYear = new Date().getFullYear()
+  const years: string[] = []
+
+  for (let y = currentYear + futureYears; y >= startYear; y--) {
+    years.push(String(y))
   }
-  return years;
+
+  return years
 }

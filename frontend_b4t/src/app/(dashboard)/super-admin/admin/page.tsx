@@ -10,8 +10,12 @@ import {
   Trash2,
   Plus,
   EyeOff,
+  Eye,
   X,
   SlidersHorizontal,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   Select,
@@ -21,6 +25,7 @@ import {
   SelectItem,
   SelectGroup,
 } from "@/components/ui/select";
+import { parseApiError, getFieldError } from "@/lib/error-handler";
 
 type BackendUser = {
   id: number | string;
@@ -144,15 +149,46 @@ export default function SuperAdminAdminPage() {
     });
   }, [search, admins]);
 
+  const [sortKey, setSortKey] = useState<
+    "id" | "name" | "username" | "email" | null
+  >(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const copy = [...filtered];
+
+    copy.sort((a, b) => {
+      if (sortKey === "id") {
+        const left = Number(a.id);
+        const right = Number(b.id);
+        if (Number.isFinite(left) && Number.isFinite(right)) {
+          return sortDir === "asc" ? left - right : right - left;
+        }
+        const l = String(a.id).toLowerCase();
+        const r = String(b.id).toLowerCase();
+        return sortDir === "asc" ? l.localeCompare(r) : r.localeCompare(l);
+      }
+
+      const left = String(a[sortKey]).toLowerCase();
+      const right = String(b[sortKey]).toLowerCase();
+      return sortDir === "asc"
+        ? left.localeCompare(right)
+        : right.localeCompare(left);
+    });
+
+    return copy;
+  }, [filtered, sortKey, sortDir]);
+
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
-  const totalItems = filtered.length;
+  const totalItems = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, sortKey, sortDir]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -185,11 +221,30 @@ export default function SuperAdminAdminPage() {
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
+    return sorted.slice(start, start + pageSize);
+  }, [sorted, page, pageSize]);
 
   const pageFrom = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const pageTo = Math.min(page * pageSize, totalItems);
+
+  const toggleSort = (key: "id" | "name" | "username" | "email") => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDir("asc");
+  };
+
+  const renderSortIcon = (key: "id" | "name" | "username" | "email") => {
+    if (sortKey !== key) return <ArrowUpDown className="h-3.5 w-3.5" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3.5 w-3.5" />
+    ) : (
+      <ArrowDown className="h-3.5 w-3.5" />
+    );
+  };
 
   const formatId = (id: number | string) => {
     const n = Number(id);
@@ -210,6 +265,7 @@ export default function SuperAdminAdminPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [addFieldErrors, setAddFieldErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     name: "",
@@ -221,6 +277,7 @@ export default function SuperAdminAdminPage() {
   function onAddAdmin() {
     setOpenAdd(true);
     setError(null);
+    setAddFieldErrors({});
   }
 
   function closeAddModal() {
@@ -229,15 +286,7 @@ export default function SuperAdminAdminPage() {
     setSaving(false);
     setShowPassword(false);
     setForm({ name: "", username: "", email: "", password: "" });
-  }
-
-  function getApiErrorMessage(e: any) {
-    return (
-      e?.response?.data?.message ||
-      e?.response?.data?.error ||
-      e?.message ||
-      "Terjadi kesalahan"
-    );
+    setAddFieldErrors({});
   }
 
   async function createAdmin(payload: {
@@ -261,11 +310,10 @@ export default function SuperAdminAdminPage() {
       return;
     }
 
-
-
     try {
       setSaving(true);
       setError(null);
+      setAddFieldErrors({});
 
       await createAdmin({
         name: form.name.trim(),
@@ -278,9 +326,10 @@ export default function SuperAdminAdminPage() {
       closeAddModal();
       await fetchAdmins();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      toastError(msg);
+      const { mainMessage, fieldErrors } = parseApiError(e);
+      setError(mainMessage);
+      setAddFieldErrors(fieldErrors);
+      toastError(mainMessage);
     } finally {
       setSaving(false);
     }
@@ -296,6 +345,7 @@ export default function SuperAdminAdminPage() {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editing, setEditing] = useState<UiAdmin | null>(null);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [editFieldErrors, setEditFieldErrors] = useState<Record<string, string>>({});
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -310,6 +360,7 @@ export default function SuperAdminAdminPage() {
     setShowEditPassword(false);
     setOpenEdit(true);
     setError(null);
+    setEditFieldErrors({});
   }
 
   function closeEditModal() {
@@ -320,6 +371,7 @@ export default function SuperAdminAdminPage() {
     setEditing(null);
     setPasswordChanged(false);
     setEditForm({ name: "", username: "", email: "", password: MASK_PASSWORD });
+    setEditFieldErrors({});
   }
 
   useEffect(() => {
@@ -350,11 +402,10 @@ export default function SuperAdminAdminPage() {
       return;
     }
 
-
-
     try {
       setEditSaving(true);
       setError(null);
+      setEditFieldErrors({});
 
       const payload: any = {
         name: editForm.name.trim(),
@@ -376,9 +427,10 @@ export default function SuperAdminAdminPage() {
       closeEditModal();
       await fetchAdmins();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      toastError(msg);
+      const { mainMessage, fieldErrors } = parseApiError(e);
+      setError(mainMessage);
+      setEditFieldErrors(fieldErrors);
+      toastError(mainMessage);
     } finally {
       setEditSaving(false);
     }
@@ -412,8 +464,6 @@ export default function SuperAdminAdminPage() {
   async function onConfirmDeleteAdmin() {
     if (!deleting) return;
 
-
-
     try {
       setDeleteSaving(true);
       setError(null);
@@ -424,9 +474,9 @@ export default function SuperAdminAdminPage() {
       closeDeleteModal();
       await fetchAdmins();
     } catch (e: any) {
-      const msg = getApiErrorMessage(e);
-      setError(msg);
-      toastError(msg);
+      const { mainMessage } = parseApiError(e);
+      setError(mainMessage);
+      toastError(mainMessage);
     } finally {
       setDeleteSaving(false);
     }
@@ -494,7 +544,7 @@ export default function SuperAdminAdminPage() {
             <h2 className="text-base font-semibold text-gray-900">List Admin</h2>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center mr-2 gap-2">
                 <Select
                 value={String(pageSize)}
                 onValueChange={(value) => setPageSize(Number(value))}
@@ -531,10 +581,46 @@ export default function SuperAdminAdminPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="text-left text-sm text-gray-600">
-                    <th className="py-3 px-3 font-medium">Id</th>
-                    <th className="py-3 px-3 font-medium">Nama</th>
-                    <th className="py-3 px-3 font-medium">Username</th>
-                    <th className="py-3 px-3 font-medium">Email</th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("id")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Id
+                        {renderSortIcon("id")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("name")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Nama
+                        {renderSortIcon("name")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("username")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Username
+                        {renderSortIcon("username")}
+                      </button>
+                    </th>
+                    <th className="py-3 px-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("email")}
+                        className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
+                      >
+                        Email
+                        {renderSortIcon("email")}
+                      </button>
+                    </th>
                     <th className="py-3 px-3 font-medium text-center">
                       Actions
                     </th>
@@ -676,9 +762,12 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "name") ? "border-red-500" : ""}`}
                   placeholder="e.g. Rahma Alia"
                 />
+                {getFieldError(addFieldErrors, "name") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "name")}</p>
+                )}
               </div>
 
               <div>
@@ -690,9 +779,12 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, username: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "username") ? "border-red-500" : ""}`}
                   placeholder="e.g. Rahma Alia"
                 />
+                {getFieldError(addFieldErrors, "username") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "username")}</p>
+                )}
               </div>
 
               <div>
@@ -704,10 +796,13 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, email: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(addFieldErrors, "email") ? "border-red-500" : ""}`}
                   placeholder="e.g. rahma@mail.com"
                   type="email"
                 />
+                {getFieldError(addFieldErrors, "email") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "email")}</p>
+                )}
               </div>
 
               <div>
@@ -721,7 +816,7 @@ export default function SuperAdminAdminPage() {
                     onChange={(e) =>
                       setForm((s) => ({ ...s, password: e.target.value }))
                     }
-                    className="h-10 pr-10"
+                    className={`h-10 pr-10 ${getFieldError(addFieldErrors, "password") ? "border-red-500" : ""}`}
                     placeholder=""
                     type={showPassword ? "text" : "password"}
                   />
@@ -735,6 +830,9 @@ export default function SuperAdminAdminPage() {
                     <EyeOff className="h-4 w-4" />
                   </button>
                 </div>
+                {getFieldError(addFieldErrors, "password") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(addFieldErrors, "password")}</p>
+                )}
               </div>
 
               <div className="pt-3 flex items-center justify-center gap-4">
@@ -798,9 +896,12 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "name") ? "border-red-500" : ""}`}
                   placeholder="e.g. Rahma Alia"
                 />
+                {getFieldError(editFieldErrors, "name") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "name")}</p>
+                )}
               </div>
 
               <div>
@@ -812,9 +913,12 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, username: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "username") ? "border-red-500" : ""}`}
                   placeholder="e.g. Rahma Alia"
                 />
+                {getFieldError(editFieldErrors, "username") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "username")}</p>
+                )}
               </div>
 
               <div>
@@ -826,10 +930,13 @@ export default function SuperAdminAdminPage() {
                   onChange={(e) =>
                     setEditForm((s) => ({ ...s, email: e.target.value }))
                   }
-                  className="h-10 mt-2"
+                  className={`h-10 mt-2 ${getFieldError(editFieldErrors, "email") ? "border-red-500" : ""}`}
                   placeholder="e.g. rahma@mail.com"
                   type="email"
                 />
+                {getFieldError(editFieldErrors, "email") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "email")}</p>
+                )}
               </div>
 
               <div>
@@ -844,7 +951,7 @@ export default function SuperAdminAdminPage() {
                       setPasswordChanged(true);
                       setEditForm((s) => ({ ...s, password: e.target.value }));
                     }}
-                    className="h-10 pr-10"
+                    className={`h-10 pr-10 ${getFieldError(editFieldErrors, "password") ? "border-red-500" : ""}`}
                     placeholder=""
                     type={showEditPassword ? "text" : "password"}
                   />
@@ -860,6 +967,9 @@ export default function SuperAdminAdminPage() {
                     <EyeOff className="h-4 w-4" />
                   </button>
                 </div>
+                {getFieldError(editFieldErrors, "password") && (
+                  <p className="text-xs text-red-500 mt-1">{getFieldError(editFieldErrors, "password")}</p>
+                )}
               </div>
 
               <div className="pt-3 flex items-center justify-center gap-4">

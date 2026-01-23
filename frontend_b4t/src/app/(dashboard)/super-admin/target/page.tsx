@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { AiFillFileExcel } from "react-icons/ai";
 import { FaFilePdf, FaFileCsv } from "react-icons/fa";
 import { IoPrintSharp } from "react-icons/io5";
-import axios from "axios";
 import { IoFilter } from "react-icons/io5";
 
 type BackendTarget = {
@@ -30,11 +29,11 @@ function formatRupiah(v: number) {
 }
 
 export default function TargetPage() {
-  const [year, setYear] = useState("2025");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [q, setQ] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [openFilter, setOpenFilter] = useState(false);
+
 
   const [items, setItems] = useState<RevenueTarget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +48,6 @@ export default function TargetPage() {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const toastTimer = useRef<number | null>(null);
-
-
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -87,21 +84,22 @@ export default function TargetPage() {
     setFile(null);
   };
 
-
   const handleDownload = (type: "excel" | "pdf" | "csv" | "print") => {
-  let url = "";
+    let url = "";
 
-  if (type === "excel") {
-    url = "http://localhost:8000/api/export/target/excel";
-  } else if (type === "pdf") {
-    url = "http://localhost:8000/api/export/target/pdf";
-  } else if (type === "csv") {
-    url = "http://localhost:8000/api/export/target/csv";
-  } else if (type === "print") {
-    url = "http://localhost:8000/api/print/target";
-  }
-  window.open(url, "_blank");
-};
+    if (type === "excel") {
+      url = "http://localhost:8000/api/export/target/excel";
+    } else if (type === "pdf") {
+      url = "http://localhost:8000/api/export/target/pdf";
+    } else if (type === "csv") {
+      url = "http://localhost:8000/api/export/target/csv";
+    } else if (type === "print") {
+      url = "http://localhost:8000/api/print/target";
+    }
+
+    window.open(url, "_blank");
+  };
+
   // backend apiResource('target') => GET /api/target, PUT /api/target/{id}
   const ENDPOINT_LIST = "/target";
   const ENDPOINT_UPDATE = (id: number | string) => `/target/${id}`;
@@ -164,8 +162,8 @@ export default function TargetPage() {
       const raw: BackendTarget[] = Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data)
-          ? res.data
-          : [];
+        ? res.data
+        : [];
 
       const mapped: RevenueTarget[] = raw.map((r) => ({
         id: r.id,
@@ -178,7 +176,16 @@ export default function TargetPage() {
 
       const years = Array.from(new Set(mapped.map((m) => m.year).filter(Boolean))).sort();
       if (years.length > 0 && !years.includes(year)) {
-        setYear(years[years.length - 1]); // ambil yang terbesar
+<<<<<<< HEAD
+        const currentYear = String(new Date().getFullYear());
+        if (years.includes(currentYear)) {
+          setYear(currentYear);
+        } else {
+          setYear(years[years.length - 1]); // ambil yang terbesar
+        }
+=======
+        setYear(years[years.length - 1]);
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
       }
     } catch (e: any) {
       setErr(getApiErrorMessage(e) || "Gagal memuat data target.");
@@ -187,7 +194,6 @@ export default function TargetPage() {
     }
   };
 
-  // fetch list dari backend (sekali, lalu filter by year di client)
   useEffect(() => {
     let alive = true;
 
@@ -202,16 +208,13 @@ export default function TargetPage() {
     };
   }, []);
 
-  // filter tahun + search
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     const dateFrom = startDate ? Date.parse(startDate) : null;
     const dateTo = endDate ? Date.parse(endDate) : null;
 
     const byYear = items.filter((it) => String(it.year) === String(year));
-    const searched = !s
-      ? byYear
-      : byYear.filter((it) => it.month.toLowerCase().includes(s));
+    const searched = !s ? byYear : byYear.filter((it) => it.month.toLowerCase().includes(s));
 
     if (!dateFrom && !dateTo) return searched;
 
@@ -228,6 +231,8 @@ export default function TargetPage() {
     });
   }, [items, q, year, startDate, endDate]);
 
+<<<<<<< HEAD
+=======
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
@@ -243,9 +248,7 @@ export default function TargetPage() {
   }, [page, totalPages]);
 
   const pageItems = useMemo(() => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
 
     const pages = new Set<number>();
     pages.add(1);
@@ -275,14 +278,22 @@ export default function TargetPage() {
   const pageFrom = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const pageTo = Math.min(page * pageSize, totalItems);
 
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
   const total = useMemo(() => {
     return filtered.reduce((acc, it) => acc + (Number(it.target) || 0), 0);
   }, [filtered]);
 
   const yearOptions = useMemo(() => {
     const ys = Array.from(new Set(items.map((i) => i.year).filter(Boolean))).sort();
-    // fallback default pilihan
+<<<<<<< HEAD
+    if (ys.length) return ys;
+    
+    // Fallback: tahun saat ini sampai 3 tahun ke depan
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear + 1, currentYear + 2].map(String);
+=======
     return ys.length ? ys : ["2025", "2026", "2027"];
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
   }, [items]);
 
   const onOpenEdit = (row: RevenueTarget) => {
@@ -305,16 +316,12 @@ export default function TargetPage() {
 
       const nextVal = Number(editTarget || 0);
 
-      // PUT ke backend (field sesuai controller: target_perbulan)
       const res = await api.put<any>(ENDPOINT_UPDATE(editing.id), {
         target_perbulan: nextVal,
       });
 
-      // update state agar UI langsung berubah
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === editing.id ? { ...item, target: nextVal } : item
-        )
+        prev.map((item) => (item.id === editing.id ? { ...item, target: nextVal } : item))
       );
 
       onCloseEdit();
@@ -326,46 +333,45 @@ export default function TargetPage() {
       setErr(msg);
       showToast(msg);
     }
-
-    
   };
 
+  // ✅ IMPORT: pilih endpoint sesuai ekstensi (sesuai routes backend kamu)
   const handleImportRevenue = async () => {
-  if (!file) {
-    alert("Pilih file terlebih dahulu");
-    return;
-  }
+    if (!file) {
+      showToast("Pilih file terlebih dahulu");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  try {
-    setLoadingImport(true);
+    // Backend hanya menyediakan /import/target (ImportController::importRevenue)
+    const importUrl = "/import/target";
 
-    const res = await axios.post(
-      "http://localhost:8000/api/import/target",
-      formData,
-      {
+    try {
+      setLoadingImport(true);
+
+      // ✅ pakai api instance (lebih cocok untuk auth:sanctum)
+      const res = await api.post(importUrl, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // kalau pakai sanctum
         },
-      }
-    );
-    alert(res.data.message || "Import berhasil.");
-    setFile(null);
-    await fetchTargets();
-  } catch (err: any) {
-    console.error(err);
-    if (err.response?.data?.message) {
-      alert(err.response.data.message);
-    } else {
-      alert("Import gagal, cek format file");
+      });
+
+      showToast(res.data?.message || "Import berhasil.");
+      setFile(null);
+      await fetchTargets();
+    } catch (e: any) {
+      console.error("IMPORT ERROR:", e?.response?.data || e);
+      showToast(
+        e?.response?.data?.message ||
+          e?.response?.data?.error ||
+          "Import gagal, cek format file / backend log"
+      );
+    } finally {
+      setLoadingImport(false);
     }
-  } finally {
-    setLoadingImport(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -391,21 +397,14 @@ export default function TargetPage() {
       <div className="p-6">
         {/* Header + Search */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Annual Revenue Target
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Annual Revenue Target</h1>
 
           <div className="relative w-[260px]">
             <Search
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search"
-              className="pl-9"
-            />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="pl-9" />
           </div>
         </div>
         <div className="mt-4 mb-6 border-b border-gray-200/60" />
@@ -471,6 +470,8 @@ export default function TargetPage() {
                 Print
               </Button>
             </div>
+<<<<<<< HEAD
+=======
 
             <div className="flex items-center gap-2">
               <select
@@ -487,12 +488,7 @@ export default function TargetPage() {
               </select>
 
               <div className="relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9"
-                  onClick={() => setOpenFilter((v) => !v)}
-                >
+                <Button type="button" variant="outline" className="h-9" onClick={() => setOpenFilter((v) => !v)}>
                   <IoFilter />
                   Filter
                 </Button>
@@ -501,9 +497,7 @@ export default function TargetPage() {
                   <div className="absolute right-0 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-lg z-20">
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          Start Date
-                        </label>
+                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
                         <input
                           type="date"
                           value={startDate}
@@ -513,9 +507,7 @@ export default function TargetPage() {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          End Date
-                        </label>
+                        <label className="block text-xs text-gray-500 mb-1">End Date</label>
                         <input
                           type="date"
                           value={endDate}
@@ -536,11 +528,7 @@ export default function TargetPage() {
                           Clear
                         </button>
 
-                        <Button
-                          type="button"
-                          className="h-9 bg-blue-600 hover:bg-blue-700"
-                          onClick={() => setOpenFilter(false)}
-                        >
+                        <Button type="button" className="h-9 bg-blue-600 hover:bg-blue-700" onClick={() => setOpenFilter(false)}>
                           Apply
                         </Button>
                       </div>
@@ -549,6 +537,7 @@ export default function TargetPage() {
                 )}
               </div>
             </div>
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
           </div>
 
           <div className="px-4 pb-4">
@@ -587,18 +576,20 @@ export default function TargetPage() {
                   )}
 
                   {!loading &&
-                    paginated.map((row, idx) => (
+<<<<<<< HEAD
+                    filtered.map((row, index) => (
                       <tr
                         key={row.id}
                         className="border-b border-gray-100 last:border-none"
                       >
-                        <td className="py-3 px-3 text-gray-700">
-                          {pageFrom + idx}
-                        </td>
+                        <td className="py-3 px-3 text-gray-900">{index + 1}</td>
+=======
+                    paginated.map((row, idx) => (
+                      <tr key={row.id} className="border-b border-gray-100 last:border-none">
+                        <td className="py-3 px-3 text-gray-700">{pageFrom + idx}</td>
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
                         <td className="py-3 px-3 text-gray-900">{row.month}</td>
-                        <td className="py-3 px-3 text-gray-900">
-                          {formatRupiah(Number(row.target) || 0)}
-                        </td>
+                        <td className="py-3 px-3 text-gray-900">{formatRupiah(Number(row.target) || 0)}</td>
                         <td className="py-3 px-3 text-right">
                           <button
                             onClick={() => onOpenEdit(row)}
@@ -613,19 +604,18 @@ export default function TargetPage() {
 
                   {!loading && filtered.length > 0 && (
                     <tr className="border-t border-gray-100 bg-white">
-                      <td className="py-3 px-3 font-medium text-gray-900">
-                        Total
-                      </td>
+                      <td className="py-3 px-3 font-medium text-gray-900">Total</td>
                       <td className="py-3 px-3"></td>
-                      <td className="py-3 px-3 font-medium text-gray-900">
-                        {formatRupiah(total)}
-                      </td>
+                      <td className="py-3 px-3 font-medium text-gray-900">{formatRupiah(total)}</td>
                       <td className="py-3 px-3"></td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+<<<<<<< HEAD
+=======
+
             <div className="mt-4 flex items-center justify-between px-3 text-sm text-gray-500">
               <div>
                 Showing {pageFrom} to {pageTo} of {totalItems} entries
@@ -639,6 +629,7 @@ export default function TargetPage() {
                 >
                   Previous
                 </button>
+
                 {pageItems.map((item, idx) =>
                   item === "dots" ? (
                     <span key={`dots-${idx}`} className="px-2 text-gray-400">
@@ -660,6 +651,7 @@ export default function TargetPage() {
                     </button>
                   )
                 )}
+
                 <button
                   type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -670,6 +662,7 @@ export default function TargetPage() {
                 </button>
               </div>
             </div>
+>>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
           </div>
         </div>
 
@@ -679,14 +672,10 @@ export default function TargetPage() {
             <div className="w-full max-w-[640px] rounded-2xl bg-white shadow-xl border border-gray-200">
               <div className="flex items-start justify-between gap-4 px-6 pt-6">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Edit Monthly Target
-                  </h3>
+                  <h3 className="text-base font-semibold text-gray-900">Edit Monthly Target</h3>
                   <p className="mt-1 text-sm text-gray-500">
                     Update the revenue target for{" "}
-                    <span className="font-medium text-gray-700">
-                      {editing?.month ?? "-"}
-                    </span>
+                    <span className="font-medium text-gray-700">{editing?.month ?? "-"}</span>
                   </p>
                 </div>
 
@@ -746,9 +735,7 @@ export default function TargetPage() {
             <div className="w-full max-w-[520px] rounded-2xl bg-white shadow-xl border border-gray-200">
               <div className="flex items-start justify-between px-6 pt-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Import File
-                  </h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Import File</h2>
                   <p className="mt-1 text-sm text-gray-500">
                     Upload and attach file to this project.
                   </p>
@@ -773,23 +760,17 @@ export default function TargetPage() {
                     <Upload className="h-5 w-5 text-gray-500" />
                   </div>
                   <div className="text-sm text-gray-600">
-                    <span className="text-blue-600 font-medium">
-                      Click to upload
-                    </span>{" "}
+                    <span className="text-blue-600 font-medium">Click to upload</span>{" "}
                     or drag and drop here
                   </div>
                   <div className="text-xs text-gray-400">CSV or Excel</div>
-                  {file && (
-                    <div className="text-xs text-gray-600">
-                      Selected: {file.name}
-                    </div>
-                  )}
+                  {file && <div className="text-xs text-gray-600">Selected: {file.name}</div>}
                 </label>
 
                 <input
                   id="target-import"
                   type="file"
-                  accept=".xlsx,.csv"
+                  accept=".xlsx,.csv,.xls"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="sr-only"
                 />
