@@ -605,14 +605,9 @@ export default function SuperAdminTestingPage() {
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-<<<<<<< HEAD
-                className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-gray-700 mr-2 outline-none"
-                aria-label="Rows per page">
-=======
                 className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none mr-2"
                 aria-label="Rows per page"
               >
->>>>>>> 2dd9bcad7e650824b7cc9b27e5aadb5fbdda35b4
                 {[10, 20, 50].map((size) => (
                   <option key={size} value={size}>
                     {size}
