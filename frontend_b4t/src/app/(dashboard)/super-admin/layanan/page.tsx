@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
@@ -24,8 +24,8 @@ import { IoFilter } from "react-icons/io5";
 type BackendLayanan = {
   id: number | string;
   nama_layanan?: string | null;
-  tanggal_layanan?: string | null; // ✅ date (YYYY-MM-DD)
-  pembayaran?: number | string | null; // ✅ integer
+  tanggal_layanan?: string | null; // âœ… date (YYYY-MM-DD)
+  pembayaran?: number | string | null; // âœ… integer
 };
 
 
@@ -445,7 +445,7 @@ export default function SuperAdminTestingPage() {
   };
   const handleImportLayanan = async () => {
   if (!fileLayanan) {
-    alert("Pilih file terlebih dahulu");
+    showToast("Pilih file terlebih dahulu");
     return;
   }
 
@@ -462,9 +462,9 @@ export default function SuperAdminTestingPage() {
     );
 
     // notif sukses
-    alert(res.data.message || "Import layanan berhasil 🎉");
+    showToast(res.data.message || "Import layanan berhasil");
 
-    // 🔄 refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
+    // ðŸ”„ refresh data tabel (PAKAI LOGIC YANG SAMA SEPERTI fetchLayanan)
     const refresh = await api.get("/layanan");
 
     const raw: BackendLayanan[] = Array.isArray(refresh.data?.data)
@@ -487,12 +487,11 @@ export default function SuperAdminTestingPage() {
 
   } catch (err: any) {
     console.error(err);
-    alert(err.response?.data?.message || "Import gagal, cek format file");
+    showToast(err.response?.data?.message || "Import gagal, cek format file");
   } finally {
     setLoadingImportLayanan(false);
   }
 };
-
 
   return (
     <div className="w-full min-h-[calc(100vh-48px)] bg-white">
@@ -1068,7 +1067,7 @@ export default function SuperAdminTestingPage() {
                   {deleting.nama_layanan}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {formatDate(deleting.tanggal_layanan)} •{" "}
+                  {formatDate(deleting.tanggal_layanan)} â€¢{" "}
                   {formatIdr(deleting.pembayaran)}
                 </div>
               </div>
@@ -1184,3 +1183,4 @@ export default function SuperAdminTestingPage() {
     </div>
   );
 }
+
